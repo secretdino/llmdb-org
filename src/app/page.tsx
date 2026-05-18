@@ -70,6 +70,14 @@ interface BenchmarkItem {
   cudaGraphs: boolean | null;
   ngl: number | null;
   kvCacheDtype: string | null;
+  kvCacheDtypeK: string | null;
+  kvCacheDtypeV: string | null;
+  ubatchSize: number | null;
+  noMmap: boolean | null;
+  temperature: number | null;
+  topP: number | null;
+  topK: number | null;
+  minP: number | null;
   mla: boolean | null;
   chunkedPrefill: boolean | null;
   speculativeMethod: string | null;
@@ -162,7 +170,8 @@ function DashboardContent() {
     setTimeout(() => setCopiedShare(false), 2000);
   };
 
-  // Quietly synchronize activeBenchmarkId to the browser address bar as a query parameter (?run=id) without list fetching
+  // Quietly synchronize activeBenchmarkId to the browser address bar as a query parameter (?run=id) using HTML5 History API
+  // This completely avoids Next.js App Router navigation triggers, preventing Suspense unmounting loops
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
@@ -172,16 +181,31 @@ function DashboardContent() {
       params.delete("run");
     }
     const newQuery = params.toString();
-    router.replace(newQuery ? `${pathname}?${newQuery}` : pathname, { scroll: false });
-  }, [activeBenchmarkId, pathname, router]);
+    const newUrl = newQuery ? `${pathname}?${newQuery}` : pathname;
+    window.history.replaceState(null, "", newUrl);
+  }, [activeBenchmarkId, pathname]);
 
-  // Synchronize state from URL parameter (?run=id) on initial load and during browser back/forward history navigation
+  // Read the initial run ID from the URL search parameters on mount only
   useEffect(() => {
-    const runId = searchParams.get("run");
-    if (runId !== activeBenchmarkId) {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const runId = params.get("run");
+    if (runId) {
       setActiveBenchmarkId(runId);
     }
-  }, [searchParams, activeBenchmarkId]);
+  }, []);
+
+  // Listen for browser popstate events to synchronize state correctly during back/forward navigation
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const runId = params.get("run");
+      setActiveBenchmarkId(runId);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   // Global Telemetry aggregations
   const [telemetry, setTelemetry] = useState({
@@ -504,6 +528,23 @@ ${fallbackDeploy}
         </div>
 
         <div className="flex items-center space-x-4 relative" id="header_auth_zone">
+          {/* Official Ko-fi sponsorship button to support community development */}
+          <a
+            id="btn_kofi_sponsor"
+            href="https://ko-fi.com/K3K7C3O9T"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center transition hover:opacity-85"
+          >
+            <img
+              id="img_kofi_sponsor"
+              height="36"
+              style={{ border: "0px", height: "36px" }}
+              src="https://storage.ko-fi.com/cdn/kofi3.png?v=6"
+              alt="Buy Me a Coffee at ko-fi.com"
+            />
+          </a>
+
           {/* Elegant Language Selector Dropdown */}
           <div className="relative">
             <button
@@ -1152,7 +1193,7 @@ ${fallbackDeploy}
                       </div>
                     </div>
                   </div>
- 
+
                   {/* Software Engine + Execution configs */}
                   <div className="glass-card rounded-lg p-3 border border-zinc-800/60 flex flex-col gap-2.5" id="drawer_runtime_params_card">
                     <h4 className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider pb-1.5 border-b border-zinc-800 flex items-center gap-1 font-heading">
@@ -1180,7 +1221,10 @@ ${fallbackDeploy}
                       </div>
                       <div>
                         <span className="text-zinc-500 block text-[9px] uppercase font-bold tracking-wider">{t("dashboard.drawer.batch_size")}</span>
-                        <span className="text-zinc-300 font-bold">{benchmarkDetails.batchSize || "Not set"}</span>
+                        <span className="text-zinc-300 font-bold">
+                          {benchmarkDetails.batchSize || "Not set"}
+                          {benchmarkDetails.ubatchSize ? ` (ubatch: ${benchmarkDetails.ubatchSize})` : ""}
+                        </span>
                       </div>
                       {benchmarkDetails.ngl !== null && (
                         <div>
@@ -1188,16 +1232,16 @@ ${fallbackDeploy}
                           <span className="text-zinc-300 font-bold">{benchmarkDetails.ngl} layers</span>
                         </div>
                       )}
-                      {benchmarkDetails.loadPrecision && (
+                      {benchmarkDetails.kvCacheDtypeK && (
                         <div>
-                          <span className="text-zinc-500 block text-[9px] uppercase font-bold tracking-wider">{t("dashboard.drawer.load_precision")}</span>
-                          <span className="text-zinc-300 font-bold">{benchmarkDetails.loadPrecision}</span>
+                          <span className="text-zinc-500 block text-[9px] uppercase font-bold tracking-wider">{t("dashboard.drawer.kv_cache_dtype_k")}</span>
+                          <span className="text-zinc-300 font-bold">{benchmarkDetails.kvCacheDtypeK}</span>
                         </div>
                       )}
-                      {benchmarkDetails.kvCacheDtype && (
+                      {benchmarkDetails.kvCacheDtypeV && (
                         <div>
-                          <span className="text-zinc-500 block text-[9px] uppercase font-bold tracking-wider">{t("dashboard.drawer.kv_cache_dtype")}</span>
-                          <span className="text-zinc-300 font-bold">{benchmarkDetails.kvCacheDtype}</span>
+                          <span className="text-zinc-500 block text-[9px] uppercase font-bold tracking-wider">{t("dashboard.drawer.kv_cache_dtype_v")}</span>
+                          <span className="text-zinc-300 font-bold">{benchmarkDetails.kvCacheDtypeV}</span>
                         </div>
                       )}
                     </div>
@@ -1235,6 +1279,12 @@ ${fallbackDeploy}
                         {benchmarkDetails.cudaGraphs ? "🟢 ACTIVE" : "⚪ OFF"}
                       </span>
                     </div>
+                    <div className="flex flex-col gap-0.5" id="drawer_toggle_no_mmap">
+                      <span className="text-zinc-500 text-[9px] uppercase font-bold tracking-wider">{t("dashboard.drawer.no_mmap")}</span>
+                      <span className={`font-bold font-mono text-[9px] ${benchmarkDetails.noMmap ? "text-accent-teal" : "text-zinc-500"}`}>
+                        {benchmarkDetails.noMmap ? "🟢 ACTIVE" : "⚪ OFF"}
+                      </span>
+                    </div>
                     <div className="flex flex-col gap-0.5 col-span-2 sm:col-span-1" id="drawer_toggle_speculative_draft">
                       <span className="text-zinc-500 text-[9px] uppercase font-bold tracking-wider">{t("dashboard.drawer.speculative_draft")}</span>
                       <span className={`font-bold font-mono text-[9px] ${benchmarkDetails.speculativeMethod && benchmarkDetails.speculativeMethod !== 'none' ? "text-accent-teal" : "text-zinc-500"}`}>
@@ -1245,6 +1295,42 @@ ${fallbackDeploy}
                     </div>
                   </div>
                 </div>
+
+                {/* 4.6. Sampling Parameters */}
+                {(benchmarkDetails.temperature !== null || benchmarkDetails.topP !== null || benchmarkDetails.topK !== null || benchmarkDetails.minP !== null) && (
+                  <div className="glass-card rounded-lg p-3 border border-zinc-800/60 flex flex-col gap-2.5" id="drawer_sampling_card">
+                    <h4 className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider pb-1.5 border-b border-zinc-800 flex items-center gap-1.5 font-heading">
+                      <SlidersHorizontal className="w-3.5 h-3.5 text-accent-lavender" />
+                      {t("dashboard.drawer.sampling_header")}
+                    </h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[10px]" id="drawer_sampling_grid">
+                      {benchmarkDetails.temperature !== null && (
+                        <div className="flex flex-col gap-0.5" id="drawer_sampling_temp">
+                          <span className="text-zinc-500 text-[9px] uppercase font-bold tracking-wider">{t("dashboard.drawer.temperature")}</span>
+                          <span className="text-zinc-300 font-bold font-mono text-[9px]">{benchmarkDetails.temperature}</span>
+                        </div>
+                      )}
+                      {benchmarkDetails.topP !== null && (
+                        <div className="flex flex-col gap-0.5" id="drawer_sampling_topp">
+                          <span className="text-zinc-500 text-[9px] uppercase font-bold tracking-wider">{t("dashboard.drawer.top_p")}</span>
+                          <span className="text-zinc-300 font-bold font-mono text-[9px]">{benchmarkDetails.topP}</span>
+                        </div>
+                      )}
+                      {benchmarkDetails.topK !== null && (
+                        <div className="flex flex-col gap-0.5" id="drawer_sampling_topk">
+                          <span className="text-zinc-500 text-[9px] uppercase font-bold tracking-wider">{t("dashboard.drawer.top_k")}</span>
+                          <span className="text-zinc-300 font-bold font-mono text-[9px]">{benchmarkDetails.topK}</span>
+                        </div>
+                      )}
+                      {benchmarkDetails.minP !== null && (
+                        <div className="flex flex-col gap-0.5" id="drawer_sampling_minp">
+                          <span className="text-zinc-500 text-[9px] uppercase font-bold tracking-wider">{t("dashboard.drawer.min_p")}</span>
+                          <span className="text-zinc-300 font-bold font-mono text-[9px]">{benchmarkDetails.minP}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* 5. Custom auto-generated Docker Compose section */}
                 <div className="glass-card rounded-lg p-3 border border-zinc-800 flex flex-col gap-3 relative" id="drawer_docker_compose_card" style={{ display: 'none' }}>
@@ -1365,8 +1451,8 @@ ${fallbackDeploy}
           Hosts the official copyright notice, Google Antigravity attribution badge,
           and the interactive hook to trigger the licenses / specifications overlay.
       */}
-      <footer 
-        className="mt-12 pt-6 pb-3 border-t border-zinc-800/60 flex flex-col sm:flex-row justify-between items-center text-zinc-500 font-mono text-[10px] gap-4 w-full" 
+      <footer
+        className="mt-12 pt-6 pb-3 border-t border-zinc-800/60 flex flex-col sm:flex-row justify-between items-center text-zinc-500 font-mono text-[10px] gap-4 w-full"
         id="dashboard_footer"
       >
         <div className="flex flex-col items-center sm:items-start gap-1" id="footer_copyright_group">
@@ -1379,9 +1465,9 @@ ${fallbackDeploy}
           </span>
           <span className="text-zinc-500" id="span_packages_notice">
             Licensed under MIT. Learn more in our{" "}
-            <button 
+            <button
               id="btn_trigger_about_modal"
-              onClick={() => setShowAboutModal(true)} 
+              onClick={() => setShowAboutModal(true)}
               className="underline hover:text-accent-teal focus:outline-none cursor-pointer"
             >
               About & Licenses
@@ -1397,18 +1483,18 @@ ${fallbackDeploy}
           Antigravity developer engineering, and the core dependency package licensing matrix.
       */}
       {showAboutModal && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface-0/60 backdrop-blur-md animate-in fade-in duration-200" 
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface-0/60 backdrop-blur-md animate-in fade-in duration-200"
           id="about_modal_overlay"
         >
           {/* Modal Backdrop dismiss trigger */}
-          <div 
-            className="fixed inset-0" 
-            onClick={() => setShowAboutModal(false)} 
+          <div
+            className="fixed inset-0"
+            onClick={() => setShowAboutModal(false)}
             id="about_modal_backdrop"
           />
-          <div 
-            className="w-full max-w-lg glass-card rounded-xl border border-amber-500/20 bg-surface-0/90 shadow-2xl p-6 relative z-10 animate-in zoom-in-95 duration-200" 
+          <div
+            className="w-full max-w-lg glass-card rounded-xl border border-amber-500/20 bg-surface-0/90 shadow-2xl p-6 relative z-10 animate-in zoom-in-95 duration-200"
             id="about_modal_card"
           >
             {/* Modal Close Button */}
@@ -1436,10 +1522,10 @@ ${fallbackDeploy}
               <p className="leading-relaxed" id="p_about_description">
                 The <strong className="text-white">LLM Benchmarks Database (llmdb)</strong> is a community-driven catalog mapping Large Language Model inference performance under various hardware and software configurations.
               </p>
-              
+
               {/* Google Antigravity Attribution Block */}
-              <div 
-                className="bg-surface-1/40 border border-zinc-800/80 rounded-lg p-3 flex items-start gap-2.5" 
+              <div
+                className="bg-surface-1/40 border border-zinc-800/80 rounded-lg p-3 flex items-start gap-2.5"
                 id="div_antigravity_attributon_block"
               >
                 <span className="text-accent-amber text-lg mt-0.5" id="span_sparkle_icon">⚡</span>
@@ -1475,8 +1561,8 @@ ${fallbackDeploy}
               </div>
 
               {/* Footer System Status */}
-              <div 
-                className="border-t border-zinc-800/60 pt-3 flex justify-between items-center text-[10px] font-mono text-zinc-500" 
+              <div
+                className="border-t border-zinc-800/60 pt-3 flex justify-between items-center text-[10px] font-mono text-zinc-500"
                 id="div_modal_status_bar"
               >
                 <span id="span_db_status">Database Status: Connected</span>

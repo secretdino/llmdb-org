@@ -165,6 +165,8 @@ export async function GET(req: Request): Promise<Response> {
         cudaGraphs: benchmarks.cudaGraphs,
         ngl: benchmarks.ngl,
         kvCacheDtype: benchmarks.kvCacheDtype,
+        kvCacheDtypeK: benchmarks.kvCacheDtypeK,
+        kvCacheDtypeV: benchmarks.kvCacheDtypeV,
         mla: benchmarks.mla,
         chunkedPrefill: benchmarks.chunkedPrefill,
         speculativeMethod: benchmarks.speculativeMethod,
@@ -177,6 +179,12 @@ export async function GET(req: Request): Promise<Response> {
         ttftMs: benchmarks.ttftMs,
         p50Ms: benchmarks.p50Ms,
         p99Ms: benchmarks.p99Ms,
+        temperature: benchmarks.temperature,
+        topP: benchmarks.topP,
+        ubatchSize: benchmarks.ubatchSize,
+        noMmap: benchmarks.noMmap,
+        topK: benchmarks.topK,
+        minP: benchmarks.minP,
         createdAt: benchmarks.createdAt,
         
         // Author metadata joins
@@ -254,6 +262,8 @@ const benchmarkIngestSchema = z.object({
   flashAttention: z.boolean().default(false),
   cudaGraphs: z.boolean().default(false),
   kvCacheDtype: z.string().max(20).optional(),
+  kvCacheDtypeK: z.string().max(20).optional(),
+  kvCacheDtypeV: z.string().max(20).optional(),
   mla: z.boolean().default(false),
   chunkedPrefill: z.boolean().default(false),
   speculativeMethod: z.string().max(50).default('none'),
@@ -269,6 +279,10 @@ const benchmarkIngestSchema = z.object({
   p99Ms: z.number().positive().optional(),
   temperature: z.number().nonnegative().optional(),
   topP: z.number().nonnegative().optional(),
+  ubatchSize: z.number().int().positive().optional(),
+  noMmap: z.boolean().default(false),
+  topK: z.number().int().nonnegative().optional(),
+  minP: z.number().nonnegative().optional(),
   
   tags: z.array(z.string()).optional(),
   rawLogContent: z.string().optional().nullable(),
@@ -329,6 +343,14 @@ export async function POST(req: Request): Promise<Response> {
         rawBody.speculativeMethod = rawBody.speculativeMethod || parsedLogs.speculativeMethod;
         rawBody.numSpeculativeTokens = rawBody.numSpeculativeTokens || parsedLogs.numSpeculativeTokens;
         rawBody.loadPrecision = rawBody.loadPrecision || parsedLogs.loadPrecision;
+        rawBody.kvCacheDtypeK = rawBody.kvCacheDtypeK || parsedLogs.kvCacheDtypeK;
+        rawBody.kvCacheDtypeV = rawBody.kvCacheDtypeV || parsedLogs.kvCacheDtypeV;
+        rawBody.ubatchSize = rawBody.ubatchSize || parsedLogs.ubatchSize;
+        rawBody.noMmap = rawBody.noMmap !== undefined ? rawBody.noMmap : parsedLogs.noMmap;
+        rawBody.temperature = rawBody.temperature || parsedLogs.temperature;
+        rawBody.topP = rawBody.topP || parsedLogs.topP;
+        rawBody.topK = rawBody.topK || parsedLogs.topK;
+        rawBody.minP = rawBody.minP || parsedLogs.minP;
         rawBody.ttftMs = rawBody.ttftMs || parsedLogs.ttftMs;
         rawBody.promptTokens = rawBody.promptTokens || parsedLogs.promptTokens;
         rawBody.generationTokens = rawBody.generationTokens || parsedLogs.generationTokens;

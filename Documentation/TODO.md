@@ -22,6 +22,8 @@ This document tracks the execution progress of features across the project's dev
   - [x] Fix API session validation to support NextAuth cookies
 - [x] **[[FEAT-004] Benchmark Detail Page](file:///c:/git/pi/llmdb/docs/features_and_epics/FEAT-004_benchmark_detail.md)**: Detail view displaying raw logs and custom Docker Compose files.
 - [x] **[FEAT-017] Shareable Entry Links**: Sync active entry in URL (?run=id) and add a share button with translation keys.
+- [x] **KV Cache Precision Separation**: Remove the Weight Load Precision field and separate KV Cache Precision into distinct Key and Value precision inputs across form, API validation, translations, and details view.
+- [x] **Custom CLI Parameter Support**: Fully integrated custom llama.cpp CLI flags (ubatch size, no-mmap, and sampling parameters) into DB, API, log parsing, multilingual dictionaries (EN/ES/DE), submit form inputs, and details drawer specs.
 
 ### Phase 1.D: Production Launch
 - [x] **Public Release Licensing & Attributions**: Implement standard MIT License, write detailed third-party attributions, configure env.example, and integrate Cyberglass footer and modal.

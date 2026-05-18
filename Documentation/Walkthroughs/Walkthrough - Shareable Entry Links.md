@@ -1,6 +1,6 @@
-# Walkthrough - Shareable Entry Links & URL State Sync
+# Walkthrough - Shareable Entry Links & URL State Sync (Fixed)
 
-We have successfully implemented shareable direct links for individual benchmark entries. Users can now copy a direct URL containing a query parameter representing the specific benchmark, share it, and have the interface automatically restore the sliding details drawer state on initial mount or during browser history navigation.
+We have successfully implemented shareable direct links for individual benchmark entries. When opening a benchmark details drawer, the browser URL query parameter `?run=id` is quietly synchronized. We resolved the sidebar flashing loop bug by switching from Next.js dynamic routing to standard browser History API state synchronization, completely preventing Next.js router from triggering Suspense unmount and remount sequences.
 
 ---
 
@@ -18,10 +18,11 @@ Added English, Spanish, and German translations for `share_entry` and `copied_li
   - `"share_entry": "Eintrag teilen"`
   - `"copied_link": "Link kopiert!"`
 
-### 2. Client-Side State Synchronization
-We added two separate, non-overlapping `useEffect` hooks in the client entry point **[page.tsx](file:///c:/git-secretdino/llmdb/src/app/page.tsx)**:
-* **Address Bar Sync**: Whenever `activeBenchmarkId` changes, we quietly synchronize it into the browser query params as `?run=uuid` using `router.replace(..., { scroll: false })`. This avoids triggering a full list catalog refetch since `activeBenchmarkId` is kept outside the primary search queries dependency list.
-* **History & Mount Navigation Sync**: A mount-and-update hook captures changes in the URL query string (such as browser back/forward buttons or direct page loads) and maps it back to `activeBenchmarkId`. This ensures the UI remains fully synchronized.
+### 2. Client-Side State Synchronization (Suspense Loop Fix)
+We updated the state synchronization hooks in the client entry point **[page.tsx](file:///c:/git-secretdino/llmdb/src/app/page.tsx)**:
+* **HTML5 History API Sync**: When `activeBenchmarkId` changes, we quietly write to the browser address bar using `window.history.replaceState` instead of Next.js `router.replace`. Standard history state writes do not notify Next.js dynamic page navigation pipelines, meaning the `<Suspense>` boundary is **never triggered** and the component tree **never unmounts**. This resolves the flashing loop completely.
+* **Initial Mount Loader**: On first page load, we check `window.location.search` for a `?run=uuid` parameter and set it as the initial benchmark ID, preserving shareable links and deep linking functionality.
+* **History Navigation Listener**: A `popstate` event listener updates `activeBenchmarkId` whenever the user navigates through browser history (e.g., clicking Back or Forward), keeping the UI completely in sync with browser state.
 
 ### 3. Glassmorphic Share Button
 Constructed a premium, responsive Share button right next to the Upvotes and Weights actions at the bottom of the details drawer.
@@ -103,7 +104,8 @@ Here are the precise changes made to `src/app/page.tsx`:
 +    setTimeout(() => setCopiedShare(false), 2000);
 +  };
 +
-+  // Quietly synchronize activeBenchmarkId to the browser address bar as a query parameter (?run=id) without list fetching
++  // Quietly synchronize activeBenchmarkId to the browser address bar as a query parameter (?run=id) using HTML5 History API
++  // This completely avoids Next.js App Router navigation triggers, preventing Suspense unmounting loops
 +  useEffect(() => {
 +    if (typeof window === "undefined") return;
 +    const params = new URLSearchParams(window.location.search);
@@ -113,16 +115,31 @@ Here are the precise changes made to `src/app/page.tsx`:
 +      params.delete("run");
 +    }
 +    const newQuery = params.toString();
-+    router.replace(newQuery ? `${pathname}?${newQuery}` : pathname, { scroll: false });
-+  }, [activeBenchmarkId, pathname, router]);
++    const newUrl = newQuery ? `${pathname}?${newQuery}` : pathname;
++    window.history.replaceState(null, "", newUrl);
++  }, [activeBenchmarkId, pathname]);
 +
-+  // Synchronize state from URL parameter (?run=id) on initial load and during browser back/forward history navigation
++  // Read the initial run ID from the URL search parameters on mount only
 +  useEffect(() => {
-+    const runId = searchParams.get("run");
-+    if (runId !== activeBenchmarkId) {
++    if (typeof window === "undefined") return;
++    const params = new URLSearchParams(window.location.search);
++    const runId = params.get("run");
++    if (runId) {
 +      setActiveBenchmarkId(runId);
 +    }
-+  }, [searchParams, activeBenchmarkId]);
++  }, []);
++
++  // Listen for browser popstate events to synchronize state correctly during back/forward navigation
++  useEffect(() => {
++    if (typeof window === "undefined") return;
++    const handlePopState = () => {
++      const params = new URLSearchParams(window.location.search);
++      const runId = params.get("run");
++      setActiveBenchmarkId(runId);
++    };
++    window.addEventListener("popstate", handlePopState);
++    return () => window.removeEventListener("popstate", handlePopState);
++  }, []);
 ```
 
 ```diff

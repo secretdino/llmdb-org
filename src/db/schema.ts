@@ -295,6 +295,12 @@ export const benchmarks = pgTable('benchmarks', {
   // Key-value cache data precision type (e.g. f16, q4_0)
   kvCacheDtype: varchar('kv_cache_dtype', { length: 20 }),
   
+  // Key cache data precision type (e.g. f16, q4_0)
+  kvCacheDtypeK: varchar('kv_cache_dtype_k', { length: 20 }),
+  
+  // Value cache data precision type (e.g. f16, q4_0)
+  kvCacheDtypeV: varchar('kv_cache_dtype_v', { length: 20 }),
+  
   // Toggle showing if Multi-Head Latent Attention (MLA) was enabled
   mla: boolean('mla'),
   
@@ -339,6 +345,18 @@ export const benchmarks = pgTable('benchmarks', {
   
   // Generation sampling nucleus top-P value
   topP: doublePrecision('top_p'),
+
+  // Micro-batch size for engine processing (e.g. llama.cpp ubatch-size)
+  ubatchSize: integer('ubatch_size'),
+
+  // Toggle showing if memory mapping was disabled
+  noMmap: boolean('no_mmap'),
+
+  // Generation sampling top-K value
+  topK: integer('top_k'),
+
+  // Generation sampling min-P value
+  minP: doublePrecision('min_p'),
 
   /**
    * Meta-Information

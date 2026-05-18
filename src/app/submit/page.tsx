@@ -2,15 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  ArrowLeft, 
-  Terminal, 
-  Cpu, 
-  UploadCloud, 
-  Save, 
-  Trash2, 
-  AlertTriangle, 
-  Gauge, 
+import {
+  ArrowLeft,
+  Terminal,
+  Cpu,
+  UploadCloud,
+  Save,
+  Trash2,
+  AlertTriangle,
+  Gauge,
   BookOpen
 } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -31,36 +31,42 @@ interface FormState {
   title: string;
   narrative: string;
   sourceUrl: string;
-  
+
   gpuModel: string;
   gpuCount: number;
   gpuVram: string;
   cpu: string;
   ram: string;
-  
+
   engine: "llama.cpp" | "vLLM" | "Ollama" | "TGI" | "exllamav2";
   engineVersion: string;
   os: string;
-  
+
   modelName: string;
   modelParams: string;
   modelQuant: string;
   modelSource: string;
-  
+
   contextLength: string;
   batchSize: string;
+  ubatchSize: string;
   numThreads: string;
   ngl: string;
-  
+
   flashAttention: boolean;
   cudaGraphs: boolean;
   mla: boolean;
   chunkedPrefill: boolean;
+  noMmap: boolean;
   speculativeMethod: string;
   numSpeculativeTokens: string;
-  loadPrecision: string;
-  kvCacheDtype: string;
-  
+  kvCacheDtypeK: string;
+  kvCacheDtypeV: string;
+  temperature: string;
+  topP: string;
+  topK: string;
+  minP: string;
+
   tokensPerSec: string;
   promptTokensPerSec: string;
   ttftMs: string;
@@ -108,16 +114,22 @@ export default function SubmitBenchmarkPage() {
     modelSource: "",
     contextLength: "",
     batchSize: "",
+    ubatchSize: "",
     numThreads: "",
     ngl: "",
     flashAttention: false,
     cudaGraphs: false,
     mla: false,
     chunkedPrefill: false,
+    noMmap: false,
     speculativeMethod: "none",
     numSpeculativeTokens: "",
-    loadPrecision: "fp16",
-    kvCacheDtype: "",
+    kvCacheDtypeK: "",
+    kvCacheDtypeV: "",
+    temperature: "",
+    topP: "",
+    topK: "",
+    minP: "",
     tokensPerSec: "",
     promptTokensPerSec: "",
     ttftMs: ""
@@ -125,14 +137,14 @@ export default function SubmitBenchmarkPage() {
 
   // Raw copy-paste console area content
   const [rawLogs, setRawLogs] = useState("");
-  
+
   // Flash animation pulse flags dictionary
   const [pulseFields, setPulseFields] = useState<Partial<Record<keyof FormState, boolean>>>({});
-  
+
   // Local storage hardware rigs list state
   const [savedRigs, setSavedRigs] = useState<SavedRig[]>([]);
   const [newProfileName, setNewProfileName] = useState("");
-  
+
   // Submission lifecycle states
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -207,7 +219,7 @@ export default function SubmitBenchmarkPage() {
       triggerPulse("promptTokensPerSec");
     }
 
-    const llamaGenRegex = /eval\s+time\s*=\s*([\d\.]+)\s*ms\s*\/\s*(\d+)\s*(?:runs|tokens)\s*\(.*?,?\s*([\d\.]+)\s*(?:t\/s|tokens\s+per\s+second)\)/i;
+    const llamaGenRegex = /(?<!prompt\s+)eval\s+time\s*=\s*([\d\.]+)\s*ms\s*\/\s*(\d+)\s*(?:runs|tokens)\s*\(.*?,?\s*([\d\.]+)\s*(?:t\/s|tokens\s+per\s+second)\)/i;
     const gMatch = rawLogs.match(llamaGenRegex);
     if (gMatch) {
       updates.tokensPerSec = gMatch[3];
@@ -313,7 +325,15 @@ export default function SubmitBenchmarkPage() {
     const cliCtx = rawLogs.match(/(?:-c|--ctx-size)\s+(\d+)/i);
     const cliNgl = rawLogs.match(/(?:-ngl|--n-gpu-layers)\s+(\d+)/i);
     const cliThreads = rawLogs.match(/(?:-t|--threads)\s+(\d+)/i);
-    const cliBatch = rawLogs.match(/(?:-b|--batch-size)\s+(\d+)/i);
+    const cliBatch = rawLogs.match(/(?:-b|--batch-size|--batch_size)\s+(\d+)/i);
+    const cliCacheK = rawLogs.match(/--cache-type-k\s+["']?([^"'\s\-\n#]+)/i);
+    const cliCacheV = rawLogs.match(/--cache-type-v\s+["']?([^"'\s\-\n#]+)/i);
+    const cliUbatch = rawLogs.match(/(?:--ubatch-size|--ubatch_size)\s+(\d+)/i);
+    const cliTemp = rawLogs.match(/(?:--temp|--temperature)\s+([\d\.]+)/i);
+    const cliTopP = rawLogs.match(/(?:--top-p|--top_p)\s+([\d\.]+)/i);
+    const cliTopK = rawLogs.match(/(?:--top-k|--top_k)\s+(\d+)/i);
+    const cliMinP = rawLogs.match(/(?:--min-p|--min_p)\s+([\d\.]+)/i);
+    const cliFaVal = rawLogs.match(/-fa\s+["']?(on|off|true|false|\d)/i);
 
     if (cliCtx) {
       updates.contextLength = cliCtx[1];
@@ -331,10 +351,51 @@ export default function SubmitBenchmarkPage() {
       updates.batchSize = cliBatch[1];
       triggerPulse("batchSize");
     }
+    if (cliCacheK) {
+      updates.kvCacheDtypeK = cliCacheK[1].trim();
+      triggerPulse("kvCacheDtypeK");
+    }
+    if (cliCacheV) {
+      updates.kvCacheDtypeV = cliCacheV[1].trim();
+      triggerPulse("kvCacheDtypeV");
+    }
+    if (cliUbatch) {
+      updates.ubatchSize = cliUbatch[1];
+      triggerPulse("ubatchSize");
+    }
+    if (cliTemp) {
+      updates.temperature = cliTemp[1];
+      triggerPulse("temperature");
+    }
+    if (cliTopP) {
+      updates.topP = cliTopP[1];
+      triggerPulse("topP");
+    }
+    if (cliTopK) {
+      updates.topK = cliTopK[1];
+      triggerPulse("topK");
+    }
+    if (cliMinP) {
+      updates.minP = cliMinP[1];
+      triggerPulse("minP");
+    }
 
-    if (/--flash-attn/i.test(rawLogs) || /flash-attention/i.test(rawLogs)) {
+    if (cliFaVal) {
+      const val = cliFaVal[1].toLowerCase();
+      if (val === 'on' || val === 'true' || val === '1') {
+        updates.flashAttention = true;
+      } else {
+        updates.flashAttention = false;
+      }
+      triggerPulse("flashAttention");
+    } else if (/--flash-attn/i.test(rawLogs) || /flash-attention/i.test(rawLogs)) {
       updates.flashAttention = true;
       triggerPulse("flashAttention");
+    }
+
+    if (/--no-mmap|--no_mmap/i.test(rawLogs)) {
+      updates.noMmap = true;
+      triggerPulse("noMmap");
     }
 
     // Apply resolved updates
@@ -405,7 +466,7 @@ export default function SubmitBenchmarkPage() {
     e.preventDefault();
     setErrorMessage("");
     setSuccessMessage("");
-    
+
     // Core timing speed validation check
     if (!form.tokensPerSec || parseFloat(form.tokensPerSec) <= 0) {
       setErrorMessage(t("submit.alerts.tps_required"));
@@ -427,40 +488,46 @@ export default function SubmitBenchmarkPage() {
       title: form.title || `Community ${form.gpuModel} running ${form.modelName}`,
       narrative: form.narrative || null,
       sourceUrl: form.sourceUrl || null,
-      
+
       gpuModel: form.gpuModel,
       gpuCount: Number(form.gpuCount),
       gpuVram: form.gpuVram || null,
       cpu: form.cpu || null,
       ram: form.ram || null,
-      
+
       engine: form.engine,
       engineVersion: form.engineVersion || null,
       os: form.os || null,
-      
+
       modelName: form.modelName,
       modelParams: form.modelParams ? parseFloat(form.modelParams) : null,
       modelQuant: form.modelQuant || null,
       modelSource: form.modelSource || null,
-      
+
       contextLength: form.contextLength ? parseInt(form.contextLength, 10) : null,
       batchSize: form.batchSize ? parseInt(form.batchSize, 10) : null,
       numThreads: form.numThreads ? parseInt(form.numThreads, 10) : null,
       ngl: form.ngl ? parseInt(form.ngl, 10) : null,
-      
+
       flashAttention: form.flashAttention,
       cudaGraphs: form.cudaGraphs,
       mla: form.mla,
       chunkedPrefill: form.chunkedPrefill,
       speculativeMethod: form.speculativeMethod,
       numSpeculativeTokens: form.numSpeculativeTokens ? parseInt(form.numSpeculativeTokens, 10) : 0,
-      loadPrecision: form.loadPrecision || null,
-      kvCacheDtype: form.kvCacheDtype || null,
-      
+      kvCacheDtypeK: form.kvCacheDtypeK || null,
+      kvCacheDtypeV: form.kvCacheDtypeV || null,
+      ubatchSize: form.ubatchSize ? parseInt(form.ubatchSize, 10) : null,
+      noMmap: form.noMmap,
+      temperature: form.temperature ? parseFloat(form.temperature) : null,
+      topP: form.topP ? parseFloat(form.topP) : null,
+      topK: form.topK ? parseInt(form.topK, 10) : null,
+      minP: form.minP ? parseFloat(form.minP) : null,
+
       tokensPerSec: parseFloat(form.tokensPerSec),
       promptTokensPerSec: form.promptTokensPerSec ? parseFloat(form.promptTokensPerSec) : null,
       ttftMs: form.ttftMs ? parseFloat(form.ttftMs) : null,
-      
+
       rawLogContent: rawLogs || null
     };
 
@@ -506,7 +573,7 @@ export default function SubmitBenchmarkPage() {
 
   return (
     <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col relative" id="submit_page_container">
-      
+
       {/* Background glow canvas */}
       <div className="absolute top-[10%] right-[-10%] w-[500px] h-[500px] rounded-full glow-amber -z-10 pointer-events-none" id="submit_bg_glow_purple" />
 
@@ -528,6 +595,7 @@ export default function SubmitBenchmarkPage() {
             <span className="text-[10px] text-zinc-500 font-mono tracking-widest uppercase">{t("submit.header.subtitle")}</span>
           </div>
         </div>
+
       </header>
 
       {/* ERROR & SUCCESS ALERTS PANEL */}
@@ -553,7 +621,7 @@ export default function SubmitBenchmarkPage() {
 
       {/* TWO COLUMN INTERACTION BOARD */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 items-start" id="submit_interaction_board">
-        
+
         {/* LEFT COLUMN: RAW TIMINGS TERMINAL DUMP (2 cols) */}
         <div className="lg:col-span-2 flex flex-col gap-4" id="submit_left_column">
           <div className="glass-card rounded-lg p-3.5 border border-zinc-800 flex flex-col gap-4" id="submit_terminal_dump_card">
@@ -639,7 +707,7 @@ llama_print_timings:        eval time = 5240 ms...`}
                         {rig.gpuCount}x {rig.gpuModel || "Generic GPU"} {rig.gpuVram && `• ${rig.gpuVram}`}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2" id={`rig_profile_actions_${rig.profileName.replace(/\s+/g, "_")}`}>
                       <button
                         type="button"
@@ -669,13 +737,13 @@ llama_print_timings:        eval time = 5240 ms...`}
 
         {/* RIGHT COLUMN: MANUAL OVERRIDE INGESTION FORM (3 cols) */}
         <form onSubmit={handleSubmit} className="lg:col-span-3 flex flex-col gap-4" id="submit_right_column">
-          
+
           {/* Section: Basic context narrative info */}
           <div className="glass-card rounded-lg p-3.5 border border-zinc-800 flex flex-col gap-4" id="submit_narrative_metadata_card">
             <h4 className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider pb-2 border-b border-zinc-800/60 font-heading">
               {t("submit.form.narrative_metadata")}
             </h4>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" id="submit_narrative_fields_grid">
               {/* Input: Submission Title */}
               <div className="flex flex-col sm:col-span-2" id="submit_field_title_group">
@@ -726,7 +794,7 @@ llama_print_timings:        eval time = 5240 ms...`}
             <h4 className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider pb-2 border-b border-zinc-800/60 font-heading">
               Inference Speeds & Timings
             </h4>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" id="submit_speeds_fields_grid">
               {/* Input: Decoding Speed (Tokens/sec) */}
               <div className="flex flex-col" id="submit_field_gen_speed_group">
@@ -778,7 +846,7 @@ llama_print_timings:        eval time = 5240 ms...`}
             <h4 className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider pb-2 border-b border-zinc-800/60 font-heading">
               {t("submit.form.hardware_settings")}
             </h4>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" id="submit_hardware_fields_grid">
               {/* Input: GPU Model */}
               <div className="flex flex-col sm:col-span-2" id="submit_field_gpu_model_group">
@@ -854,7 +922,7 @@ llama_print_timings:        eval time = 5240 ms...`}
             <h4 className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider pb-2 border-b border-zinc-800/60 font-heading">
               {t("submit.form.software_model_settings")}
             </h4>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" id="submit_software_model_fields_grid">
               {/* Select: Runtime engine */}
               <div className="flex flex-col" id="submit_field_engine_group">
@@ -960,8 +1028,8 @@ llama_print_timings:        eval time = 5240 ms...`}
             <h4 className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider pb-2 border-b border-zinc-800/60 font-heading">
               {t("submit.form.fine_tuned_settings")}
             </h4>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4" id="submit_advanced_fields_grid">
+
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-4" id="submit_advanced_fields_grid">
               {/* Input: Context size */}
               <div className="flex flex-col" id="submit_field_context_group">
                 <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1.5">{t("submit.form.context")}</label>
@@ -985,6 +1053,19 @@ llama_print_timings:        eval time = 5240 ms...`}
                   value={form.batchSize}
                   onChange={(e) => setForm({ ...form, batchSize: e.target.value })}
                   className={`glass-input rounded-md px-2.5 py-1.5 text-xs ${pulseFields.batchSize ? "pulse-fill" : ""}`}
+                />
+              </div>
+
+              {/* Input: Micro-Batch size */}
+              <div className="flex flex-col" id="submit_field_ubatch_size_group">
+                <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1.5">{t("submit.form.ubatch_size")}</label>
+                <input
+                  id="form_ubatchSize"
+                  type="number"
+                  placeholder="e.g. 512"
+                  value={form.ubatchSize}
+                  onChange={(e) => setForm({ ...form, ubatchSize: e.target.value })}
+                  className={`glass-input rounded-md px-2.5 py-1.5 text-xs ${pulseFields.ubatchSize ? "pulse-fill" : ""}`}
                 />
               </div>
 
@@ -1016,7 +1097,7 @@ llama_print_timings:        eval time = 5240 ms...`}
             </div>
 
             {/* Accel Optimization Toggles */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-zinc-800/40 text-[10px]" id="submit_optimizations_grid">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-3 border-t border-zinc-800/40 text-[10px]" id="submit_optimizations_grid">
               <label className="flex items-center space-x-2 cursor-pointer text-zinc-300 hover:text-white py-1" id="submit_label_flash_attn">
                 <input
                   id="form_flashAttention"
@@ -1026,6 +1107,17 @@ llama_print_timings:        eval time = 5240 ms...`}
                   className="rounded border-zinc-800 text-amber-600 focus:ring-amber-500/50 bg-surface-0 h-4 w-4 cursor-pointer"
                 />
                 <span className={pulseFields.flashAttention ? "text-accent-amber font-bold" : ""}>{t("submit.form.flash_attn")}</span>
+              </label>
+
+              <label className="flex items-center space-x-2 cursor-pointer text-zinc-300 hover:text-white py-1" id="submit_label_no_mmap">
+                <input
+                  id="form_noMmap"
+                  type="checkbox"
+                  checked={form.noMmap}
+                  onChange={(e) => setForm({ ...form, noMmap: e.target.checked })}
+                  className="rounded border-zinc-800 text-amber-600 focus:ring-amber-500/50 bg-surface-0 h-4 w-4 cursor-pointer"
+                />
+                <span className={pulseFields.noMmap ? "text-accent-amber font-bold" : ""}>{t("submit.form.no_mmap")}</span>
               </label>
 
               <label className="flex items-center space-x-2 cursor-pointer text-zinc-300 hover:text-white py-1" id="submit_label_cuda_graphs">
@@ -1096,29 +1188,87 @@ llama_print_timings:        eval time = 5240 ms...`}
                 </div>
               )}
 
-              {/* Input: Weight Load Precision */}
-              <div className="flex flex-col" id="submit_field_load_precision_group">
-                <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1.5">{t("submit.form.load_precision")}</label>
+              {/* Input: KV Cache Key Precision */}
+              <div className="flex flex-col" id="submit_field_kv_cache_dtype_k_group">
+                <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1.5">{t("submit.form.kv_cache_dtype_k")}</label>
                 <input
-                  id="form_loadPrecision"
+                  id="form_kvCacheDtypeK"
                   type="text"
-                  placeholder="e.g. fp16, bf16, fp8, int4"
-                  value={form.loadPrecision}
-                  onChange={(e) => setForm({ ...form, loadPrecision: e.target.value })}
+                  placeholder="e.g. f16, q4_0, q8_0"
+                  value={form.kvCacheDtypeK}
+                  onChange={(e) => setForm({ ...form, kvCacheDtypeK: e.target.value })}
                   className="glass-input rounded-md px-2.5 py-1.5 text-xs"
                 />
               </div>
 
-              {/* Input: KV Cache Precision */}
-              <div className="flex flex-col" id="submit_field_kv_cache_dtype_group">
-                <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1.5">{t("submit.form.kv_cache_dtype")}</label>
+              {/* Input: KV Cache Value Precision */}
+              <div className="flex flex-col" id="submit_field_kv_cache_dtype_v_group">
+                <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1.5">{t("submit.form.kv_cache_dtype_v")}</label>
                 <input
-                  id="form_kvCacheDtype"
+                  id="form_kvCacheDtypeV"
                   type="text"
                   placeholder="e.g. f16, q4_0, q8_0"
-                  value={form.kvCacheDtype}
-                  onChange={(e) => setForm({ ...form, kvCacheDtype: e.target.value })}
+                  value={form.kvCacheDtypeV}
+                  onChange={(e) => setForm({ ...form, kvCacheDtypeV: e.target.value })}
                   className="glass-input rounded-md px-2.5 py-1.5 text-xs"
+                />
+              </div>
+            </div>
+
+            {/* Sampling Parameters configurations */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-3 border-t border-zinc-800/40" id="submit_sampling_grid">
+              {/* Input: Temperature */}
+              <div className="flex flex-col" id="submit_field_temperature_group">
+                <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1.5">{t("submit.form.temperature")}</label>
+                <input
+                  id="form_temperature"
+                  type="number"
+                  step="any"
+                  placeholder="e.g. 0.6"
+                  value={form.temperature}
+                  onChange={(e) => setForm({ ...form, temperature: e.target.value })}
+                  className={`glass-input rounded-md px-2.5 py-1.5 text-xs ${pulseFields.temperature ? "pulse-fill text-accent-amber font-bold" : ""}`}
+                />
+              </div>
+
+              {/* Input: Top-P */}
+              <div className="flex flex-col" id="submit_field_top_p_group">
+                <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1.5">{t("submit.form.top_p")}</label>
+                <input
+                  id="form_topP"
+                  type="number"
+                  step="any"
+                  placeholder="e.g. 0.95"
+                  value={form.topP}
+                  onChange={(e) => setForm({ ...form, topP: e.target.value })}
+                  className={`glass-input rounded-md px-2.5 py-1.5 text-xs ${pulseFields.topP ? "pulse-fill text-accent-amber font-bold" : ""}`}
+                />
+              </div>
+
+              {/* Input: Top-K */}
+              <div className="flex flex-col" id="submit_field_top_k_group">
+                <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1.5">{t("submit.form.top_k")}</label>
+                <input
+                  id="form_topK"
+                  type="number"
+                  placeholder="e.g. 40"
+                  value={form.topK}
+                  onChange={(e) => setForm({ ...form, topK: e.target.value })}
+                  className={`glass-input rounded-md px-2.5 py-1.5 text-xs ${pulseFields.topK ? "pulse-fill text-accent-amber font-bold" : ""}`}
+                />
+              </div>
+
+              {/* Input: Min-P */}
+              <div className="flex flex-col" id="submit_field_min_p_group">
+                <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1.5">{t("submit.form.min_p")}</label>
+                <input
+                  id="form_minP"
+                  type="number"
+                  step="any"
+                  placeholder="e.g. 0.08"
+                  value={form.minP}
+                  onChange={(e) => setForm({ ...form, minP: e.target.value })}
+                  className={`glass-input rounded-md px-2.5 py-1.5 text-xs ${pulseFields.minP ? "pulse-fill text-accent-amber font-bold" : ""}`}
                 />
               </div>
             </div>

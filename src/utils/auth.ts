@@ -99,7 +99,7 @@ export async function authenticateRequest(req: Request): Promise<AuthContext | n
   let session = null;
   try {
     session = await getServerSession(authOptions);
-  } catch (err) {
+  } catch {
     // Gracefully ignore Next.js request scope errors when executing outside request context (e.g. CLI integration tests)
   }
   if (session?.user) {

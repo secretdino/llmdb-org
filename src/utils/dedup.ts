@@ -155,6 +155,8 @@ interface IncomingBenchmarkInput {
   flashAttention?: boolean;
   cudaGraphs?: boolean;
   kvCacheDtype?: string;
+  kvCacheDtypeK?: string;
+  kvCacheDtypeV?: string;
   mla?: boolean;
   chunkedPrefill?: boolean;
   speculativeMethod?: string;
@@ -169,6 +171,10 @@ interface IncomingBenchmarkInput {
   p99Ms?: number;
   temperature?: number;
   topP?: number;
+  ubatchSize?: number;
+  noMmap?: boolean;
+  topK?: number;
+  minP?: number;
   tags?: string[];
   confidenceScore?: number;
   status?: 'approved' | 'pending_review' | 'quarantined';
@@ -419,6 +425,8 @@ export async function processIncomingBenchmark(
         flashAttention: input.flashAttention || false,
         cudaGraphs: input.cudaGraphs || false,
         kvCacheDtype: input.kvCacheDtype || null,
+        kvCacheDtypeK: input.kvCacheDtypeK || null,
+        kvCacheDtypeV: input.kvCacheDtypeV || null,
         mla: input.mla || false,
         chunkedPrefill: input.chunkedPrefill || false,
         speculativeMethod: input.speculativeMethod || 'none',
@@ -433,6 +441,10 @@ export async function processIncomingBenchmark(
         p99Ms: input.p99Ms || null,
         temperature: input.temperature || null,
         topP: input.topP || null,
+        ubatchSize: input.ubatchSize || null,
+        noMmap: input.noMmap || false,
+        topK: input.topK || null,
+        minP: input.minP || null,
         tags: input.tags || null,
       })
       .returning();

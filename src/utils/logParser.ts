@@ -35,6 +35,14 @@ export interface ParsedLogResult {
   speculativeMethod?: string;
   numSpeculativeTokens?: number;
   loadPrecision?: string;
+  kvCacheDtypeK?: string;
+  kvCacheDtypeV?: string;
+  ubatchSize?: number;
+  noMmap?: boolean;
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  minP?: number;
   
   confidenceScore: number;
 }
@@ -55,6 +63,7 @@ export function parseInferenceLogs(logs: string | null | undefined): ParsedLogRe
     chunkedPrefill: false,
     speculativeMethod: 'none',
     numSpeculativeTokens: 0,
+    noMmap: false,
   };
 
   let matchCount = 0;
@@ -276,7 +285,15 @@ export function parseInferenceLogs(logs: string | null | undefined): ParsedLogRe
   const cliCtx = logs.match(/(?:-c|--ctx-size)\s+(\d+)/i);
   const cliNgl = logs.match(/(?:-ngl|--n-gpu-layers)\s+(\d+)/i);
   const cliThreads = logs.match(/(?:-t|--threads)\s+(\d+)/i);
-  const cliBatch = logs.match(/(?:-b|--batch-size)\s+(\d+)/i);
+  const cliBatch = logs.match(/(?:-b|--batch-size|--batch_size)\s+(\d+)/i);
+  const cliCacheK = logs.match(/--cache-type-k\s+["']?([^"'\s\-\n#]+)/i);
+  const cliCacheV = logs.match(/--cache-type-v\s+["']?([^"'\s\-\n#]+)/i);
+  const cliUbatch = logs.match(/(?:--ubatch-size|--ubatch_size)\s+(\d+)/i);
+  const cliTemp = logs.match(/(?:--temp|--temperature)\s+([\d\.]+)/i);
+  const cliTopP = logs.match(/(?:--top-p|--top_p)\s+([\d\.]+)/i);
+  const cliTopK = logs.match(/(?:--top-k|--top_k)\s+(\d+)/i);
+  const cliMinP = logs.match(/(?:--min-p|--min_p)\s+([\d\.]+)/i);
+  const cliFaVal = logs.match(/-fa\s+["']?(on|off|true|false|\d)/i);
 
   if (cliModel) {
     result.modelName = cliModel[1];
@@ -298,10 +315,52 @@ export function parseInferenceLogs(logs: string | null | undefined): ParsedLogRe
     result.batchSize = parseInt(cliBatch[1], 10);
     matchCount++;
   }
+  if (cliCacheK) {
+    result.kvCacheDtypeK = cliCacheK[1].trim();
+    matchCount++;
+  }
+  if (cliCacheV) {
+    result.kvCacheDtypeV = cliCacheV[1].trim();
+    matchCount++;
+  }
+  if (cliUbatch) {
+    result.ubatchSize = parseInt(cliUbatch[1], 10);
+    matchCount++;
+  }
+  if (cliTemp) {
+    result.temperature = parseFloat(cliTemp[1]);
+    matchCount++;
+  }
+  if (cliTopP) {
+    result.topP = parseFloat(cliTopP[1]);
+    matchCount++;
+  }
+  if (cliTopK) {
+    result.topK = parseInt(cliTopK[1], 10);
+    matchCount++;
+  }
+  if (cliMinP) {
+    result.minP = parseFloat(cliMinP[1]);
+    matchCount++;
+  }
 
   // Flash Attention switch
-  if (/--flash-attn/i.test(logs) || /flash-attention/i.test(logs)) {
+  if (cliFaVal) {
+    const val = cliFaVal[1].toLowerCase();
+    if (val === 'on' || val === 'true' || val === '1') {
+      result.flashAttention = true;
+    } else {
+      result.flashAttention = false;
+    }
+    matchCount++;
+  } else if (/--flash-attn/i.test(logs) || /flash-attention/i.test(logs)) {
     result.flashAttention = true;
+    matchCount++;
+  }
+
+  // no-mmap flag
+  if (/--no-mmap|--no_mmap/i.test(logs)) {
+    result.noMmap = true;
     matchCount++;
   }
 
