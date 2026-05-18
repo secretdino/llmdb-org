@@ -1,0 +1,41 @@
+# Documentation Index - LLM Benchmarks Database (llmdb)
+
+Welcome to the documentation index for **LLM Benchmarks Database (llmdb)**. This repository houses a community-driven database of LLM inference benchmarks.
+
+## 📁 Repository Map
+
+### 1. Specification & Blueprint
+- [Master Blueprint](file:///c:/git/pi/llmdb/docs/master_blueprint.md) - The high-level vision, tech stack, and user roles.
+- [Phasing & Milestones](file:///c:/git/pi/llmdb/docs/phases.md) - Project plan from Core Viable Product (Phase 1) to future releases.
+- [Data Models](file:///c:/git/pi/llmdb/docs/system_architecture/data_models.md) - The database schema blueprints.
+- [Style Guide & Reusable Components](file:///c:/git/pi/llmdb/docs/system_architecture/style_guide.md) - Colors, typography, and visual component templates.
+- [Developer Guide & Contribution Specification](file:///c:/git/pi/llmdb/docs/developer_guide.md) - Standardized protocols for local development, git, testing, secrets, and PR validation workflows.
+- [Deduplication & Merging Engine](file:///c:/git/pi/llmdb/docs/system_architecture/deduplication_engine.md) - Fingerprint hash calculations, string normalization algorithms, and agent crawling merge policies.
+- [Ingestion, Moderation & Canonical Lookups](file:///c:/git/pi/llmdb/docs/system_architecture/ingestion_moderation.md) - Display name mappings, automated trust score quarantining, and cryptographically salted agent rate-limiting keys.
+- [Vercel Deployment & Cost Guide](file:///c:/git/pi/llmdb/docs/system_architecture/deployment_guide.md) - Serverless Postgres connection pooling (Neon/Supabase), zero-cost hobby tier allocations, and git-triggered production launch checklists.
+- [Seed Benchmark Dataset](file:///c:/git/pi/llmdb/docs/starting_data.md) - 12 high-fidelity baseline benchmarks representing actual Intel SYCL, AMD ROCm/Vulkan, and speculative decoding timings compiled from community scoreboards.
+
+
+### 2. Features & Epics (`docs/features_and_epics/`)
+- [FEAT-001: Benchmark CRUD](file:///c:/git/pi/llmdb/docs/features_and_epics/FEAT-001_benchmark_crud.md)
+- [FEAT-002: Public Browse + Filter](file:///c:/git/pi/llmdb/docs/features_and_epics/FEAT-002_public_browse_filter.md)
+- [FEAT-003: Canonical Name Lists](file:///c:/git/pi/llmdb/docs/features_and_epics/FEAT-003_canonical_name_lists.md)
+- [FEAT-005: Admin API Key System](file:///c:/git/pi/llmdb/docs/features_and_epics/FEAT-005_admin_api_key_system.md)
+
+### 3. Active Walkthroughs
+- [Walkthrough - Public Release Licensing and Attributions](file:///c:/git/pi/llmdb/Documentation/Walkthroughs/Walkthrough%20-%20Public%20Release%20Licensing%20and%20Attributions.md) - Implemented standard open-source MIT Licensing, constructed a detailed Third-Party Attributions guide, corrected configuration variables, added a premium Cyberglass about modal and footer, and resolved wide viewport layout alignment issues.
+- [Walkthrough - UI Localization and Maintainability Refactor](file:///c:/git/pi/llmdb/Documentation/Walkthroughs/Walkthrough%20-%20UI%20Localization%20and%20Maintainability%20Refactor.md) - Audited and translated all hardcoded UI strings into dynamic translations for English, Spanish, and German while refactoring all layout tree nodes with descriptive DOM IDs to guarantee test maintainability.
+- [Walkthrough - Custom i18n Translation Engine](file:///c:/git/pi/llmdb/Documentation/Walkthroughs/Walkthrough%20-%20Custom%20i18n%20Translation%20Engine.md) - Created lightweight client-side i18n providers, nested key resolvers, multi-lingual English/Spanish/German JSON dictionary systems, live header language dropdowns, and verified production static compile builds.
+- [Walkthrough - Phase 1.F User Email & Password Self-Registration System](file:///c:/git/pi/llmdb/Documentation/Walkthroughs/Walkthrough%20-%20Phase%201.F%20User%20Email%20&%20Password%20Self-Registration%20System.md) - Developed serverless registration API endpoints, integrated interactive toggling signup modes, implemented bcrypt salting and hashing, and verified production static compile builds.
+- [Walkthrough - Phase 1.E User Authentication & Profile System](file:///c:/git/pi/llmdb/Documentation/Walkthroughs/Walkthrough%20-%20Phase%201.E%20User%20Authentication%20&%20Profile%20System.md) - Formulated credentials and GitHub OAuth schemas, built frosted glassmorphic login portals, developed global session contexts, and verified serverless timing-log upvote/submission guards.
+- [Walkthrough - Phase 1.D Speculative Decoding & Split Master-Detail Layout](file:///c:/git/pi/llmdb/Documentation/Walkthroughs/Walkthrough%20-%20Phase%201.D%20Speculative%20Decoding%20&%20Split%20Master-Detail%20Layout.md) - Designed an inline sliding details card layout that positions results side-by-side with individual runs, exposing all parsed hardware optimizations and speculative decoding token parameters.
+- [Walkthrough - Phase 1.C Community UI Catalog & Ingestion Upload Forms](file:///c:/git/pi/llmdb/Documentation/Walkthroughs/Walkthrough%20-%20Phase%201.C%20Community%20UI%20Catalog%20&%20Ingestion%20Upload%20Forms.md) - Crafted a dynamic dark-mode browse catalog with live multi-dimensional filters and URL sync state, a timing ingest panel with client-side regex parsing cues, and a custom hardware profiles manager using LocalStorage.
+- [Walkthrough - Phase 1.B API Ingestion, Log Parsing & Deduplication Engine](file:///c:/git/pi/llmdb/Documentation/Walkthroughs/Walkthrough%20-%20Phase%201.B%20API%20Ingestion,%20Log%20Parsing%20&%20Deduplication%20Engine.md) - Developed salted SHA-256 cryptographic API key auth, raw llama.cpp/vLLM console log regex parser engines, active/quarantine trust gate filters, transaction-isolated deduplication policies, and verified with 100% successful in-memory REST integration tests.
+- [Walkthrough - Phase 1.A Database Setup, Canonical Mappings & Seed Import](file:///c:/git/pi/llmdb/Documentation/Walkthroughs/Walkthrough%20-%20Phase%201.A%20Database%20Setup,%20Canonical%20Mappings%20&%20Seed%20Import.md) - Bootstrapped Next.js 14, configured Drizzle ORM database schemas combining deduplication parameters, and verified the starting seed pipeline with 100% correct canonical links.
+- [Walkthrough - Premium Editorial Visual Redesign](file:///c:/git/pi/llmdb/Documentation/Walkthroughs/Walkthrough%20-%20Premium%20Editorial%20Visual%20Redesign.md) - Redesigned the entire dashboard from generic Cyberglass indigo/violet to a premium amber/teal/lavender editorial palette with noise textures, inner shadow glassmorphism, KPI accent borders, and improved typography scale.
+- [Walkthrough - Production Readiness Hardening](file:///c:/git/pi/llmdb/Documentation/Walkthroughs/Walkthrough%20-%20Production%20Readiness%20Hardening.md) - Dual-driver database architecture (Neon HTTP / pg Pool), hardcoded secret elimination, error detail stripping, IP-based registration rate limiting, security headers, and stale CSS palette fix.
+- [Walkthrough - Specifications Refinement & Interactive Mockup Refactor](file:///c:/git/pi/llmdb/Documentation/Walkthroughs/Archive/Walkthrough%20-%20Specifications%20Refinement%20&%20Interactive%20Mockup%20Refactor.md) - *(Archived)* Formulated specifications for raw log auto-parsing and delivered a stunning, fully-functional dark-mode glassmorphic dashboard mockup illustrating the live parsing engine.
+- [Walkthrough - Interactive Community Landing Page Mockup](file:///c:/git/pi/llmdb/Documentation/Walkthroughs/Archive/Walkthrough%20-%20Interactive%20Community%20Landing%20Page%20Mockup.md) - *(Archived)* Created a high-fidelity community landing page mockup with real-time multi-dimensional filters, active engine chips, summary statistics, and interactive specifications explores.
+
+---
+*Created: May 2026*

@@ -1,0 +1,282 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * ============================================================================
+ * PREMIUM EDITORIAL DARK-MODE DESIGN SYSTEM
+ * ============================================================================
+ * Inspired by Linear, Vercel, and Raycast — refined, understated, deeply
+ * professional. Uses warm amber/copper primary, cool teal secondary, and
+ * soft lavender tertiary on a deep charcoal canvas with noise texture.
+ */
+
+/* ─── Design Token Variables ─────────────────────────────────────────── */
+:root {
+  /* Surface scale: deep charcoal canvas */
+  --surface-0: #09090b;          /* Deepest background */
+  --surface-1: #111114;          /* Raised surface / card bg */
+  --surface-2: #18181c;          /* Elevated surface / hover */
+  --surface-3: #1f1f24;          /* Active surface / pressed */
+
+  /* Foreground text scale */
+  --foreground: #f4f4f5;         /* Primary text */
+  --foreground-muted: #a1a1aa;   /* Secondary / caption text */
+  --foreground-subtle: #52525b;  /* Disabled / placeholder text */
+
+  /* Warm amber-copper primary accent */
+  --accent-amber: #e8a951;       /* Primary action / highlight */
+  --accent-amber-hover: #f0b96a; /* Hovered amber */
+  --accent-amber-muted: rgba(232, 169, 81, 0.15); /* Tinted surface */
+  --accent-amber-glow: rgba(232, 169, 81, 0.08);  /* Faint ambient */
+
+  /* Cool teal secondary accent */
+  --accent-teal: #2dd4bf;        /* Secondary metric / success */
+  --accent-teal-muted: rgba(45, 212, 191, 0.12);
+
+  /* Soft lavender tertiary accent */
+  --accent-lavender: #c4b5fd;    /* Tertiary metric / info */
+  --accent-lavender-muted: rgba(196, 181, 253, 0.10);
+
+  /* Border scale */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.12);
+  --border-accent: rgba(232, 169, 81, 0.30);
+}
+
+/* ─── Global Body ────────────────────────────────────────────────────── */
+body {
+  color: var(--foreground);
+  background: var(--surface-0);
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+/* Subtle noise texture overlay applied to the page */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.025;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+}
+
+/* Faint dot-grid pattern for editorial depth */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.03;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.4) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ─── Premium Glass Card ─────────────────────────────────────────────── */
+/* Semi-transparent card with inner shadow for depth and a faint top-light */
+.glass-card {
+  background: rgba(17, 17, 20, 0.65);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  border: 1px solid var(--border-subtle);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.04),
+    0 1px 3px 0 rgba(0, 0, 0, 0.3),
+    0 4px 12px -2px rgba(0, 0, 0, 0.2);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Interactive card hover lift — refined, less bouncy */
+.glass-card-hover {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card-hover:hover {
+  transform: translateY(-2px);
+  background: rgba(24, 24, 28, 0.75);
+  border-color: var(--border-hover);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.06),
+    0 4px 16px -4px rgba(0, 0, 0, 0.4),
+    0 8px 24px -8px rgba(232, 169, 81, 0.06);
+}
+
+/* ─── Elevated Glass Card (for primary content) ──────────────────────── */
+.glass-card-elevated {
+  background: rgba(24, 24, 28, 0.70);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  border: 1px solid var(--border-default);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.05),
+    0 2px 8px 0 rgba(0, 0, 0, 0.3),
+    0 8px 24px -4px rgba(0, 0, 0, 0.25);
+}
+
+/* ─── Form Input Styling ─────────────────────────────────────────────── */
+/* Darker glass input with warm amber focus ring */
+.glass-input {
+  background: rgba(9, 9, 11, 0.7);
+  border: 1px solid var(--border-subtle);
+  color: var(--foreground);
+  transition: all 0.2s ease;
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: var(--accent-amber);
+  background: rgba(9, 9, 11, 0.9);
+  box-shadow: 0 0 0 3px var(--accent-amber-glow), 0 0 12px var(--accent-amber-glow);
+}
+
+.glass-input::placeholder {
+  color: var(--foreground-subtle);
+}
+
+/* ─── KPI Left Accent Border Indicator ───────────────────────────────── */
+/* Colored left-edge bar on stat cards for visual hierarchy */
+.accent-border-left-amber {
+  border-left: 3px solid var(--accent-amber);
+}
+
+.accent-border-left-teal {
+  border-left: 3px solid var(--accent-teal);
+}
+
+.accent-border-left-lavender {
+  border-left: 3px solid var(--accent-lavender);
+}
+
+/* ─── Custom Scrollbar ───────────────────────────────────────────────── */
+/* Refined scrollbar with amber-tinted thumb */
+.cyber-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.cyber-scrollbar::-webkit-scrollbar-track {
+  background: rgba(9, 9, 11, 0.3);
+}
+
+.cyber-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(232, 169, 81, 0.2);
+  border-radius: 99px;
+}
+
+.cyber-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(232, 169, 81, 0.4);
+}
+
+/* ─── Auto-fill Pulse Animation ──────────────────────────────────────── */
+/* Glowing ring when fields are auto-populated from parsed logs */
+.pulse-fill {
+  animation: fieldPulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes fieldPulse {
+  0% {
+    box-shadow: 0 0 4px var(--accent-amber-glow);
+    border-color: rgba(232, 169, 81, 0.25);
+  }
+  100% {
+    box-shadow: 0 0 12px rgba(232, 169, 81, 0.2);
+    border-color: rgba(232, 169, 81, 0.5);
+  }
+}
+
+/* ─── Entrance Animation ─────────────────────────────────────────────── */
+/* Fade-in-up for cards and sections */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+/* ─── Shimmer Loading Effect ─────────────────────────────────────────── */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.02) 25%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0.02) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* ─── Background Mesh Glows (refined, smaller, muted) ────────────────── */
+/* Warm ambient glow */
+.glow-amber {
+  filter: blur(100px);
+  background: radial-gradient(circle, rgba(232, 169, 81, 0.06) 0%, rgba(0, 0, 0, 0) 70%);
+}
+
+/* Cool ambient glow */
+.glow-teal {
+  filter: blur(100px);
+  background: radial-gradient(circle, rgba(45, 212, 191, 0.04) 0%, rgba(0, 0, 0, 0) 70%);
+}
+
+/* Legacy class compatibility (kept for any references) */
+.glow-purple {
+  filter: blur(100px);
+  background: radial-gradient(circle, rgba(232, 169, 81, 0.06) 0%, rgba(0, 0, 0, 0) 70%);
+}
+
+.glow-cyan {
+  filter: blur(100px);
+  background: radial-gradient(circle, rgba(45, 212, 191, 0.04) 0%, rgba(0, 0, 0, 0) 70%);
+}
+
+/* ─── Markdown Content Block Styling ─────────────────────────────────── */
+.markdown-block h1,
+.markdown-block h2,
+.markdown-block h3 {
+  color: var(--foreground);
+  font-weight: 700;
+  margin-bottom: 0.5em;
+}
+
+.markdown-block p {
+  margin-bottom: 0.75em;
+  line-height: 1.7;
+}
+
+.markdown-block code {
+  background: rgba(232, 169, 81, 0.08);
+  color: var(--accent-amber);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.markdown-block pre {
+  background: rgba(9, 9, 11, 0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 1em;
+  overflow-x: auto;
+}
