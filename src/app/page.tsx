@@ -18,7 +18,8 @@ import {
   SlidersHorizontal,
   LogOut,
   LogIn,
-  Globe
+  Globe,
+  Share2
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { useTranslation } from "@/components/i18n-provider";
@@ -149,7 +150,38 @@ function DashboardContent() {
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
   const [copiedDocker, setCopiedDocker] = useState(false);
   const [copiedLogs, setCopiedLogs] = useState(false);
+  const [copiedShare, setCopiedShare] = useState(false);
   const [dockerEngine, setDockerEngine] = useState<"llama.cpp" | "vllm" | "ollama">("llama.cpp");
+
+  // Clipboard copy helper to generate a direct link using the active run parameter
+  const copyShareLink = () => {
+    if (typeof window === "undefined" || !activeBenchmarkId) return;
+    const shareUrl = `${window.location.origin}${pathname}?run=${activeBenchmarkId}`;
+    navigator.clipboard.writeText(shareUrl);
+    setCopiedShare(true);
+    setTimeout(() => setCopiedShare(false), 2000);
+  };
+
+  // Quietly synchronize activeBenchmarkId to the browser address bar as a query parameter (?run=id) without list fetching
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (activeBenchmarkId) {
+      params.set("run", activeBenchmarkId);
+    } else {
+      params.delete("run");
+    }
+    const newQuery = params.toString();
+    router.replace(newQuery ? `${pathname}?${newQuery}` : pathname, { scroll: false });
+  }, [activeBenchmarkId, pathname, router]);
+
+  // Synchronize state from URL parameter (?run=id) on initial load and during browser back/forward history navigation
+  useEffect(() => {
+    const runId = searchParams.get("run");
+    if (runId !== activeBenchmarkId) {
+      setActiveBenchmarkId(runId);
+    }
+  }, [searchParams, activeBenchmarkId]);
 
   // Global Telemetry aggregations
   const [telemetry, setTelemetry] = useState({
@@ -1277,6 +1309,20 @@ ${fallbackDeploy}
                 >
                   <ThumbsUp className="w-4 h-4 text-accent-amber" />
                   {t("dashboard.drawer.helpful_submission")} ({benchmarkDetails.upvotes})
+                </button>
+
+                {/* Share Entry Button */}
+                <button
+                  id="btn_share_entry"
+                  onClick={copyShareLink}
+                  className="py-2 px-4 text-xs font-bold text-zinc-300 bg-surface-1/60 hover:bg-surface-1 border border-zinc-800 hover:text-white rounded-lg transition flex items-center justify-center gap-1.5"
+                >
+                  {copiedShare ? (
+                    <Check className="w-4 h-4 text-accent-teal animate-pulse" />
+                  ) : (
+                    <Share2 className="w-4 h-4 text-accent-amber" />
+                  )}
+                  {copiedShare ? t("dashboard.drawer.copied_link") : t("dashboard.drawer.share_entry")}
                 </button>
 
                 {/* External repository card anchor */}

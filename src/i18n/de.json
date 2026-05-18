@@ -126,7 +126,9 @@
       "console_header": "Laufzeit-Timing-Konsolenprotokoll",
       "copy_log": "Protokoll kopieren",
       "helpful_submission": "Hilfreicher Beitrag",
-      "model_weights": "Modellgewichte"
+      "model_weights": "Modellgewichte",
+      "share_entry": "Eintrag teilen",
+      "copied_link": "Link kopiert!"
     }
   },
   "login": {

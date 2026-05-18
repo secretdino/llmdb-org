@@ -18,7 +18,9 @@ This document tracks the execution progress of features across the project's dev
 ### Phase 1.C: Community UI Catalog & Submission Forms
 - [x] **[[FEAT-002] Public Browse + Filter](file:///c:/git/pi/llmdb/docs/features_and_epics/FEAT-002_public_browse_filter.md)**: Visitors can query, filter, and sort benchmarks with URL-shareable state.
 - [x] **[[FEAT-001] Benchmark CRUD](file:///c:/git/pi/llmdb/docs/features_and_epics/FEAT-001_benchmark_crud.md)**: Users can create/edit/delete benchmarks with dynamic settings.
+  - [x] Fix API session validation to support NextAuth cookies
 - [x] **[[FEAT-004] Benchmark Detail Page](file:///c:/git/pi/llmdb/docs/features_and_epics/FEAT-004_benchmark_detail.md)**: Detail view displaying raw logs and custom Docker Compose files.
+- [x] **[FEAT-017] Shareable Entry Links**: Sync active entry in URL (?run=id) and add a share button with translation keys.
 
 ### Phase 1.D: Production Launch
 - [x] **Public Release Licensing & Attributions**: Implement standard MIT License, write detailed third-party attributions, configure env.example, and integrate Cyberglass footer and modal.

@@ -126,7 +126,9 @@
       "console_header": "Consola del registro de tiempos de ejecución",
       "copy_log": "Copiar Registro",
       "helpful_submission": "Envío Útil",
-      "model_weights": "Pesos del modelo"
+      "model_weights": "Pesos del modelo",
+      "share_entry": "Compartir entrada",
+      "copied_link": "¡Enlace copiado!"
     }
   },
   "login": {

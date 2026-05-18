@@ -126,7 +126,9 @@
       "console_header": "Execution timing output console log",
       "copy_log": "Copy Log",
       "helpful_submission": "Helpful Submission",
-      "model_weights": "Model weights"
+      "model_weights": "Model weights",
+      "share_entry": "Share Entry",
+      "copied_link": "Link Copied!"
     }
   },
   "login": {

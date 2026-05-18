@@ -1,7 +1,9 @@
 import crypto from 'crypto';
 import { eq } from 'drizzle-orm';
+import { getServerSession } from 'next-auth/next';
 import { db } from '../db';
 import { apiKeys, users } from '../db/schema';
+import { authOptions } from './authOptions';
 
 /**
  * ============================================================================
@@ -93,6 +95,23 @@ export async function getOrCreateMockUser(
  * Backed by development mock overrides.
  */
 export async function authenticateRequest(req: Request): Promise<AuthContext | null> {
+  // 1. Authenticate using active NextAuth cookie-based session if present
+  const session = await getServerSession(authOptions);
+  if (session?.user) {
+    const user = session.user as {
+      id?: string;
+      role?: 'user' | 'moderator' | 'admin';
+      email?: string | null;
+    };
+    if (user.id) {
+      return {
+        userId: user.id,
+        role: user.role || 'user',
+        email: user.email || '',
+      };
+    }
+  }
+
   const headers = req.headers;
 
   // --------------------------------------------------------------------------
