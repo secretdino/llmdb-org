@@ -59,6 +59,7 @@ interface FormState {
   speculativeMethod: string;
   numSpeculativeTokens: string;
   loadPrecision: string;
+  kvCacheDtype: string;
   
   tokensPerSec: string;
   promptTokensPerSec: string;
@@ -75,31 +76,6 @@ interface SavedRig {
   ram: string;
 }
 
-// Timing log templates for user copy-paste tests
-const LOG_TEMPLATES = {
-  "llama.cpp": `system_info: n_threads = 16 / 32 | AVX = 1 | AVX2 = 1 | CUDA = 1 | 
-llama_model_loader: loaded model /models/Meta-Llama-3-8B-Instruct.Q4_K_M.gguf
-llm_load_tensors: offloaded 33/33 layers to GPU
-llama_print_timings: prompt eval time =     320.50 ms /   512 tokens ( 1597.50 t/s)
-llama_print_timings:        eval time =    5240.10 ms /   256 runs   (   48.85 t/s)`,
-
-  "vLLM": `Initializing model meta-llama/Meta-Llama-3-8B-Instruct
-Found 2 NVIDIA GeForce RTX 4090 GPU(s)
-max_model_len=32768
-Avg generation throughput: 82.3 tokens/s`,
-
-  "Ollama": `prompt eval time: 0.8s
-eval time: 5.2s (49.2 tokens/s)`,
-
-  "exllamav2": `Prompt processing: 2420.5 tokens/sec
-Token generation: 82.34 tokens/sec`,
-
-  "docker-compose": `LLAMA_ARG_MODEL : "meta-llama-3-8b.gguf"
-LLAMA_ARG_CTX_SIZE : 8192
-LLAMA_ARG_N_GPU_LAYERS : 33
-LLAMA_ARG_THREADS : 16
---flash-attn`
-};
 
 export default function SubmitBenchmarkPage() {
   const { t } = useTranslation();
@@ -141,6 +117,7 @@ export default function SubmitBenchmarkPage() {
     speculativeMethod: "none",
     numSpeculativeTokens: "",
     loadPrecision: "fp16",
+    kvCacheDtype: "",
     tokensPerSec: "",
     promptTokensPerSec: "",
     ttftMs: ""
@@ -366,10 +343,6 @@ export default function SubmitBenchmarkPage() {
     }
   }, [rawLogs]);
 
-  // Load a pre-set timing template into the log parser console
-  const loadLogTemplate = (key: keyof typeof LOG_TEMPLATES) => {
-    setRawLogs(LOG_TEMPLATES[key]);
-  };
 
   // Add/Save current hardware config as a reusable profile in LocalStorage
   const saveHardwareProfile = () => {
@@ -482,6 +455,7 @@ export default function SubmitBenchmarkPage() {
       speculativeMethod: form.speculativeMethod,
       numSpeculativeTokens: form.numSpeculativeTokens ? parseInt(form.numSpeculativeTokens, 10) : 0,
       loadPrecision: form.loadPrecision || null,
+      kvCacheDtype: form.kvCacheDtype || null,
       
       tokensPerSec: parseFloat(form.tokensPerSec),
       promptTokensPerSec: form.promptTokensPerSec ? parseFloat(form.promptTokensPerSec) : null,
@@ -593,21 +567,6 @@ export default function SubmitBenchmarkPage() {
               </p>
             </div>
 
-            {/* Timing log template buttons */}
-            <div className="flex flex-wrap gap-1.5" id="template_buttons_container">
-              <span className="text-[10px] text-zinc-500 font-bold uppercase py-1 mr-1">{t("submit.panels.btn_load_demo")}:</span>
-              {Object.keys(LOG_TEMPLATES).map((key) => (
-                <button
-                  key={key}
-                  id={`btn_load_template_${key.replace("-", "_")}`}
-                  type="button"
-                  onClick={() => loadLogTemplate(key as keyof typeof LOG_TEMPLATES)}
-                  className="px-2 py-1 bg-surface-1 border border-zinc-800 text-zinc-400 hover:text-white rounded-lg text-[9px] font-mono transition duration-150"
-                >
-                  {key}
-                </button>
-              ))}
-            </div>
 
             {/* Glowing Textarea timing console */}
             <div className="relative" id="submit_textarea_wrapper">
@@ -1137,20 +1096,30 @@ llama_print_timings:        eval time = 5240 ms...`}
                 </div>
               )}
 
-              {/* Input: Weight load Precision */}
+              {/* Input: Weight Load Precision */}
               <div className="flex flex-col" id="submit_field_load_precision_group">
                 <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1.5">{t("submit.form.load_precision")}</label>
-                <select
+                <input
                   id="form_loadPrecision"
+                  type="text"
+                  placeholder="e.g. fp16, bf16, fp8, int4"
                   value={form.loadPrecision}
                   onChange={(e) => setForm({ ...form, loadPrecision: e.target.value })}
-                  className="glass-input rounded-md px-2.5 py-1.5 text-xs cursor-pointer"
-                >
-                  <option value="fp16">fp16</option>
-                  <option value="bf16">bf16</option>
-                  <option value="fp8">fp8</option>
-                  <option value="int4">int4</option>
-                </select>
+                  className="glass-input rounded-md px-2.5 py-1.5 text-xs"
+                />
+              </div>
+
+              {/* Input: KV Cache Precision */}
+              <div className="flex flex-col" id="submit_field_kv_cache_dtype_group">
+                <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1.5">{t("submit.form.kv_cache_dtype")}</label>
+                <input
+                  id="form_kvCacheDtype"
+                  type="text"
+                  placeholder="e.g. f16, q4_0, q8_0"
+                  value={form.kvCacheDtype}
+                  onChange={(e) => setForm({ ...form, kvCacheDtype: e.target.value })}
+                  className="glass-input rounded-md px-2.5 py-1.5 text-xs"
+                />
               </div>
             </div>
           </div>

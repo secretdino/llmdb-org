@@ -3,24 +3,24 @@
     "brand_name": "LLMDB",
     "brand_domain": "LLMDB.org",
     "seo_title": "LLMDB — Community Inference Benchmarks Database",
-    "seo_description": "A community-contributed database capturing exact tokens/sec throughput, hardware configurations, and optimization secrets across diverse runtimes.",
+    "seo_description": "A community-contributed database capturing exact tokens/sec throughput, hardware configurations, and optimization secrets across diverse LLM runtimes such as llama.cpp, ollama, and vLLM.",
     "loaders": {
-      "dashboard_init": "Initializing Interface Console...",
-      "auth_verifying": "Verifying authorization credentials...",
-      "submitting": "PUBLISHING TELEMETRY LOG ENTRY..."
+      "dashboard_init": "Initializing dashboard...",
+      "auth_verifying": "Verifying credentials...",
+      "submitting": "SUBMITTING ENTRY..."
     }
   },
   "dashboard": {
     "header": {
       "subtitle": "Community LLM Performance Data",
-      "btn_upload": "Upload Timing Log",
-      "dropdown_profile": "Upload Benchmarks",
-      "dropdown_signout": "Sign Out Profile",
+      "btn_upload": "Add Benchmark",
+      "dropdown_profile": "Add Benchmark",
+      "dropdown_signout": "Sign Out",
       "dropdown_signin": "Sign In"
     },
     "kpi": {
-      "active_rigs": "Active Run Rigs",
-      "active_rigs_suffix": "nodes",
+      "active_rigs": "Benchmarks",
+      "active_rigs_suffix": "entries",
       "peak_gen": "Peak Gen Speed",
       "peak_gen_suffix": "tok/s",
       "peak_prefill": "Peak Prompt Eval",
@@ -29,11 +29,11 @@
       "avg_trust_suffix": "trust"
     },
     "filters": {
-      "search_placeholder": "Search by hardware keyword or model slug (e.g. RTX 4090, Llama-3)...",
+      "search_placeholder": "Search by hardware keyword or model (e.g. RTX 4090, Llama-3)...",
       "advanced_toggle": "Advanced",
       "btn_clear": "Clear Filters",
       "empty_title": "Zero Active Matches",
-      "empty_desc": "We couldn't isolate any timing logs fitting your specific filters context. Try broadening your hardware query.",
+      "empty_desc": "We couldn't find any timing logs fitting your specific filters context. Try broadening your hardware query.",
       "btn_reset": "Reset Filters Setup",
       "matching_profiles": "matching profiles",
       "drawer": {
@@ -76,7 +76,7 @@
         "upvotes": "Upvotes",
         "by": "by",
         "hardware_rig": "Hardware Rig",
-        "model_slug": "Model Slug",
+        "model_slug": "Model",
         "latency": "Latency",
         "single_gpu": "Single GPU",
         "multi_gpu": "GPU"
@@ -94,11 +94,11 @@
     "drawer": {
       "title": "Inference Configuration Secret Secrets Details",
       "tooltip_close": "Close panel",
-      "hardware_rig": "Hardware Rig Specifications",
+      "hardware_rig": "Hardware Rig Specs",
       "engine_details": "Engine Details",
       "model_params": "Model Parameters",
       "speculative_decoding": "Speculative Decoding",
-      "secret_toggles": "Secret Optimization Toggles",
+      "secret_toggles": "Optimization Toggles",
       "docker_replicator": "Docker Compose Local Replicator",
       "copy_docker": "Copy to Clipboard",
       "copied": "Copied!",
@@ -115,7 +115,9 @@
       "context_length": "Context Length",
       "batch_size": "Batch Size",
       "ngl_layers": "Offload NGL",
-      "opt_settings": "Optimization Toggles & Speculative Settings",
+      "load_precision": "Weight Load Precision",
+      "kv_cache_dtype": "KV Cache Precision",
+      "opt_settings": "Optimizations & Speculative Settings",
       "flash_attn": "Flash Attention",
       "mla_attn": "MLA Attention",
       "chunked_prefill": "Chunked Prefill",
@@ -183,7 +185,7 @@
   "submit": {
     "header": {
       "title": "Upload Timing Log",
-      "subtitle": "Community Benchmark Node",
+      "subtitle": "Add a new Benchmark",
       "btn_back": "Back to Catalog"
     },
     "alerts": {
@@ -199,8 +201,8 @@
       "network_error": "Network error connecting to db servers."
     },
     "panels": {
-      "terminal_title": "RAW INFERENCE TIMING LOG DUMP",
-      "terminal_subtitle": "PASTE YOUR CONSOLE LOGGER RAW DUMP HERE FOR AUTOMATED METRICS PARSING!",
+      "terminal_title": "LOG and CONFIG Parser",
+      "terminal_subtitle": "PASTE YOUR CONFIG AND THE TIMING SECTION FROM YOUR CONSOLE LOG HERE FOR AUTOMATED METRICS PARSING!",
       "engine_select": "Select Timing Engine Logs Format:",
       "btn_load_demo": "LOAD DEMO TEMPLATE",
       "profile_save": "Save Hardware Rig Profile (LocalStorage)",
@@ -214,9 +216,9 @@
       "no_profiles": "No saved rigs profiles detected."
     },
     "form": {
-      "title": "Inference Benchmark Title",
+      "title": "Benchmark Title",
       "title_placeholder": "e.g., Llama-3-8B Gen Speed on AMD Radeon AI Pro 9700",
-      "narrative": "Technical Narrative & Run Notes",
+      "narrative": "Technical Narrative, Run Notes, and Settings",
       "narrative_placeholder": "e.g., Running in FP8 precision using vLLM serving container with AMD ROCm acceleration enabled. Outstanding out-of-the-box speeds!",
       "source_url": "Source URL (e.g. GitHub Gist, Blog)",
       "gen_speed": "Generation Speed (tokens/sec)",
@@ -224,7 +226,7 @@
       "ttft": "Time to First Token (TTFT ms)",
       "gpu_model": "GPU Hardware Model",
       "gpu_count": "GPU Count",
-      "gpu_vram": "Total VRAM per Card",
+      "gpu_vram": "Total GPU VRAM",
       "cpu_model": "CPU Model",
       "system_ram": "Total System RAM",
       "engine": "Serving Inference Engine",
@@ -236,7 +238,7 @@
       "model_source": "Model Source URL",
       "context": "Model Context Size",
       "batch_size": "Batch Size",
-      "threads": "Engine CPU Threads",
+      "threads": "CPU Threads",
       "ngl": "GPU Offload Layers (NGL)",
       "flash_attn": "Flash Attention",
       "cuda_graphs": "CUDA Graphs",
@@ -244,11 +246,12 @@
       "prefill": "Chunked Prefill",
       "speculative_method": "Speculative Decoding Method",
       "speculative_tokens": "Speculative Tokens Count",
-      "load_precision": "Load Precision / Weight Type",
-      "btn_publish": "PUBLISH TELEMETRY LOG ENTRY",
+      "load_precision": "Weight Load Precision",
+      "kv_cache_dtype": "KV Cache Precision",
+      "btn_publish": "PUBLISH BENCHMARK",
       "narrative_metadata": "General narrative metadata",
       "speeds_timings": "Inference Speeds & Timings",
-      "hardware_settings": "Node hardware settings",
+      "hardware_settings": "Hardware settings",
       "software_model_settings": "Software Framework & Model Settings",
       "fine_tuned_settings": "Fine-Tuned Run Settings"
     }

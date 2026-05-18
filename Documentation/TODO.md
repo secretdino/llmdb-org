@@ -14,6 +14,7 @@ This document tracks the execution progress of features across the project's dev
 - [x] **FEAT-016 Log Parsing Backend**: Server-side raw console timing output parsing.
 - [x] **Deduplication Engine**: Fingerprint hashing calculations, normalization functions, and parent aggregate mappings.
 - [x] **Automated Ingestion Quarantine**: Automated trust score filters to isolate low-confidence benchmarks.
+- [x] **BUGFIX: logParser timing regex fix**: Fix prompt eval log interference on token generation speed parsing
 
 ### Phase 1.C: Community UI Catalog & Submission Forms
 - [x] **[[FEAT-002] Public Browse + Filter](file:///c:/git/pi/llmdb/docs/features_and_epics/FEAT-002_public_browse_filter.md)**: Visitors can query, filter, and sort benchmarks with URL-shareable state.

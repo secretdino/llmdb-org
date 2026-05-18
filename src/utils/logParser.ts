@@ -136,7 +136,7 @@ export function parseInferenceLogs(logs: string | null | undefined): ParsedLogRe
 
   // E. Performance: Token generation speed
   // eval time =    5240.10 ms /   256 runs   (   48.85 t/s)
-  const llamaGenEvalRegex = /eval\s+time\s*=\s*([\d\.]+)\s*ms\s*\/\s*(\d+)\s*(?:runs|tokens)\s*\(.*?,?\s*([\d\.]+)\s*(?:t\/s|tokens\s+per\s+second)\)/i;
+  const llamaGenEvalRegex = /(?<!prompt\s+)eval\s+time\s*=\s*([\d\.]+)\s*ms\s*\/\s*(\d+)\s*(?:runs|tokens)\s*\(.*?,?\s*([\d\.]+)\s*(?:t\/s|tokens\s+per\s+second)\)/i;
   const genMatch = logs.match(llamaGenEvalRegex);
   if (genMatch) {
     result.tokensPerSec = parseFloat(genMatch[3]);

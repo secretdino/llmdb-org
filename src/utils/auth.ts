@@ -96,7 +96,12 @@ export async function getOrCreateMockUser(
  */
 export async function authenticateRequest(req: Request): Promise<AuthContext | null> {
   // 1. Authenticate using active NextAuth cookie-based session if present
-  const session = await getServerSession(authOptions);
+  let session = null;
+  try {
+    session = await getServerSession(authOptions);
+  } catch (err) {
+    // Gracefully ignore Next.js request scope errors when executing outside request context (e.g. CLI integration tests)
+  }
   if (session?.user) {
     const user = session.user as {
       id?: string;

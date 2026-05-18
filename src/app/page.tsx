@@ -1188,6 +1188,18 @@ ${fallbackDeploy}
                           <span className="text-zinc-300 font-bold">{benchmarkDetails.ngl} layers</span>
                         </div>
                       )}
+                      {benchmarkDetails.loadPrecision && (
+                        <div>
+                          <span className="text-zinc-500 block text-[9px] uppercase font-bold tracking-wider">{t("dashboard.drawer.load_precision")}</span>
+                          <span className="text-zinc-300 font-bold">{benchmarkDetails.loadPrecision}</span>
+                        </div>
+                      )}
+                      {benchmarkDetails.kvCacheDtype && (
+                        <div>
+                          <span className="text-zinc-500 block text-[9px] uppercase font-bold tracking-wider">{t("dashboard.drawer.kv_cache_dtype")}</span>
+                          <span className="text-zinc-300 font-bold">{benchmarkDetails.kvCacheDtype}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

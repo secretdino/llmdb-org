@@ -85,14 +85,18 @@ Module.prototype.require = function (...args: any[]) {
 };
 
 // 3. Load migration DDL statements into pg-mem
-const migrationSql = fs.readFileSync(
-  path.join(__dirname, 'migrations', '0000_slim_prowler.sql'),
-  'utf-8'
-);
-const statements = migrationSql.split('--> statement-breakpoint');
-for (const stmt of statements) {
-  if (stmt.trim()) {
-    dbMem.public.none(stmt);
+const migrationsDir = path.join(__dirname, 'migrations');
+const migrationFiles = fs.readdirSync(migrationsDir)
+  .filter(file => file.endsWith('.sql'))
+  .sort();
+
+for (const file of migrationFiles) {
+  const migrationSql = fs.readFileSync(path.join(migrationsDir, file), 'utf-8');
+  const statements = migrationSql.split('--> statement-breakpoint');
+  for (const stmt of statements) {
+    if (stmt.trim()) {
+      dbMem.public.none(stmt);
+    }
   }
 }
 
