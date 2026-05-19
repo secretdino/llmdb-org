@@ -164,7 +164,7 @@ function DashboardContent() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Individual detail slide drawer states
-  const [activeBenchmarkId, setActiveBenchmarkId] = useState<string | null>(null);
+  const [activeBenchmarkId, setActiveBenchmarkId] = useState<string | null>(searchParams.get("run"));
   const [benchmarkDetails, setBenchmarkDetails] = useState<BenchmarkDetails | null>(null);
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
   const [copiedDocker, setCopiedDocker] = useState(false);
@@ -201,16 +201,6 @@ function DashboardContent() {
     window.history.replaceState(null, "", newUrl);
   }, [activeBenchmarkId, pathname]);
 
-  // Read the initial run ID from the URL search parameters on mount only
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    const runId = params.get("run");
-    if (runId) {
-      setActiveBenchmarkId(runId);
-    }
-  }, []);
-
   // Listen for browser popstate events to synchronize state correctly during back/forward navigation
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -233,24 +223,32 @@ function DashboardContent() {
 
   // URL-Shareable state synchronization: build path with parameters whenever filters update
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (searchQuery) params.set("q", searchQuery);
-    if (selectedEngine && selectedEngine !== "all") params.set("engine", selectedEngine);
-    if (selectedQuant) params.set("quant", selectedQuant);
-    if (contextLengthFilter) params.set("context", contextLengthFilter);
-    if (minTpsFilter) params.set("min_tps", minTpsFilter);
-    if (selectedSort) params.set("sort", selectedSort);
-    if (selectedModel) params.set("model_name", selectedModel);
-    if (selectedGpu) params.set("gpu_model", selectedGpu);
-    if (selectedSpeculative) params.set("speculative_method", selectedSpeculative);
-    if (selectedVram) params.set("vram", selectedVram);
+    if (typeof window === "undefined") return;
 
-    // Update browser URL query path quietly
+    // Start from window.location.search to preserve existing parameters (e.g. ?run=id)
+    const params = new URLSearchParams(window.location.search);
+
+    // Update or remove filter parameters based on current filter state
+    if (searchQuery) params.set("q", searchQuery); else params.delete("q");
+    if (selectedEngine && selectedEngine !== "all") params.set("engine", selectedEngine); else params.delete("engine");
+    if (selectedQuant) params.set("quant", selectedQuant); else params.delete("quant");
+    if (contextLengthFilter) params.set("context", contextLengthFilter); else params.delete("context");
+    if (minTpsFilter) params.set("min_tps", minTpsFilter); else params.delete("min_tps");
+    if (selectedSort) params.set("sort", selectedSort); else params.delete("sort");
+    if (selectedModel) params.set("model_name", selectedModel); else params.delete("model_name");
+    if (selectedGpu) params.set("gpu_model", selectedGpu); else params.delete("gpu_model");
+    if (selectedSpeculative) params.set("speculative_method", selectedSpeculative); else params.delete("speculative_method");
+    if (selectedVram) params.set("vram", selectedVram); else params.delete("vram");
+
+    // Update browser URL query path quietly using HTML5 History API to prevent Next.js unmounting loops
     const newQuery = params.toString();
-    router.replace(newQuery ? `${pathname}?${newQuery}` : pathname);
+    const newUrl = newQuery ? `${pathname}?${newQuery}` : pathname;
+    window.history.replaceState(null, "", newUrl);
 
-    // Trigger catalog refresh query
-    fetchBenchmarks(newQuery);
+    // Trigger catalog refresh query (excluding the details run param)
+    const fetchParams = new URLSearchParams(params.toString());
+    fetchParams.delete("run");
+    fetchBenchmarks(fetchParams.toString());
   }, [
     searchQuery,
     selectedEngine,
@@ -262,8 +260,7 @@ function DashboardContent() {
     selectedGpu,
     selectedSpeculative,
     selectedVram,
-    pathname,
-    router
+    pathname
   ]);
 
   // Fetch benchmark records from GET API route
