@@ -1,6 +1,6 @@
 import { drizzle as drizzleNodePg } from 'drizzle-orm/node-postgres';
-import { drizzle as drizzleNeonHttp } from 'drizzle-orm/neon-http';
-import { neon, neonConfig } from '@neondatabase/serverless';
+import { drizzle as drizzleNeonServerless } from 'drizzle-orm/neon-serverless';
+import { Pool as NeonPool } from '@neondatabase/serverless';
 import { Pool } from 'pg';
 import * as schema from './schema';
 
@@ -11,7 +11,7 @@ import * as schema from './schema';
  * 
  * Supports two connection strategies controlled by the DB_DRIVER env var:
  * 
- *   DB_DRIVER=neon  →  Neon serverless HTTP driver (recommended for Vercel)
+ *   DB_DRIVER=neon  →  Neon serverless WebSocket Pool driver (recommended for Vercel)
  *   DB_DRIVER=pg    →  Traditional pg Pool with persistent TCP connections
  * 
  * Defaults to 'pg' for local development, 'neon' for production on Vercel.
@@ -52,20 +52,17 @@ function createDrizzleClient() {
   }
 
   if (driverMode === 'neon') {
-    // ── Neon Serverless HTTP Driver ──────────────────────────────────
-    // Uses HTTP-based queries over fetch(), ideal for Vercel Edge/Serverless.
-    // No persistent TCP connections — each query is a stateless HTTP request.
-    neonConfig.fetchConnectionCache = true;
-
-    const sql = neon(connectionString!);
-    const client = drizzleNeonHttp(sql, { schema });
+    // ── Neon Serverless WebSocket Pool Driver ──────────────────────────
+    // Uses a Serverless Pool over WebSockets to enable interactive SQL transactions.
+    const pool = new NeonPool({ connectionString: connectionString! });
+    const client = drizzleNeonServerless(pool, { schema });
 
     // Cache in non-production environments
     if (process.env.NODE_ENV !== 'production') {
       globalForDb.drizzleInstance = client;
     }
 
-    console.log('[DB] Initialized with Neon HTTP driver');
+    console.log('[DB] Initialized with Neon Serverless Pool driver');
     return client;
   } else {
     // ── Traditional pg Pool Driver ──────────────────────────────────
