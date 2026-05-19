@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { eq, and } from 'drizzle-orm';
 import { db } from '../../../../../db';
-import { benchmarks, canonicalBenchmarks, users, gpuCanonicalNames, modelCanonicalNames, comments } from '../../../../../db/schema';
+import { benchmarks, canonicalBenchmarks, users, gpuCanonicalNames, modelCanonicalNames, comments, upvotes } from '../../../../../db/schema';
 import { authenticateRequest, getOrCreateMockUser } from '../../../../../utils/auth';
 import { renderMarkdownToHtml } from '../../../../../utils/markdown';
 
@@ -132,12 +132,25 @@ export async function GET(
       .where(eq(comments.benchmarkId, runId))
       .orderBy(comments.createdAt); // Chronological ascending comments flow
 
+    // Check if the current authenticated user has already upvoted this benchmark (FEAT-006)
+    let userVoted = false;
+    if (context?.userId) {
+      const existingVote = await db.query.upvotes.findFirst({
+        where: and(
+          eq(upvotes.benchmarkId, runId),
+          eq(upvotes.userId, context.userId)
+        ),
+      });
+      userVoted = !!existingVote;
+    }
+
     return NextResponse.json(
       {
         benchmark: {
           ...run,
           renderedNarrative,
           comments: benchmarkComments,
+          userVoted,
         },
       },
       { status: 200 }

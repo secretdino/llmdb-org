@@ -97,6 +97,7 @@ interface BenchmarkItem {
   authorAvatar: string | null;
   canonicalGpuName: string | null;
   canonicalModelName: string | null;
+  userVoted?: boolean;
 }
 
 interface CommentItem {
@@ -338,23 +339,62 @@ function DashboardContent() {
     setSelectedVram("");
   };
 
-  // Trigger upvote POST API call
+  // Trigger upvote POST API call to toggle upvoting with optimistic client-side transitions (FEAT-006)
   const triggerUpvote = async (runId: string) => {
+    // Redirect unauthenticated users to login with the current path as a callback
     if (status === "unauthenticated") {
       router.push(`/login?callbackUrl=${encodeURIComponent(pathname)}`);
       return;
     }
     if (!benchmarkDetails) return;
+
+    // Cache the previous states for fallback resolution in case of API failure
+    const prevDetails = { ...benchmarkDetails };
+    const prevList = [...benchmarksList];
+
+    // Compute optimistic target states (toggle toggle)
+    const isAlreadyVoted = !!benchmarkDetails.userVoted;
+    const nextVoted = !isAlreadyVoted;
+    const nextUpvotes = nextVoted ? benchmarkDetails.upvotes + 1 : Math.max(0, benchmarkDetails.upvotes - 1);
+
+    // Apply immediate optimistic state changes to the UI for fluid cyberpunk responsiveness
+    setBenchmarkDetails({
+      ...benchmarkDetails,
+      upvotes: nextUpvotes,
+      userVoted: nextVoted
+    });
+    setBenchmarksList(
+      benchmarksList.map(b => b.id === runId ? { ...b, upvotes: nextUpvotes, userVoted: nextVoted } : b)
+    );
+
     try {
-      // Mock upvote state change on client for immediate response
+      // Dispatch POST request to toggle upvote on the server side
+      const response = await fetch(`/api/v1/benchmarks/${runId}/upvote`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error("Server upvote processing rejected");
+      }
+
+      // Synchronize with returned database metrics to ensure ultimate consistency
+      const data = await response.json();
       setBenchmarkDetails({
         ...benchmarkDetails,
-        upvotes: benchmarkDetails.upvotes + 1
+        upvotes: data.upvotes,
+        userVoted: data.user_voted
       });
-      // Increment also in matched list grid
-      setBenchmarksList(benchmarksList.map(b => b.id === runId ? { ...b, upvotes: b.upvotes + 1 } : b));
+      setBenchmarksList(
+        benchmarksList.map(b => b.id === runId ? { ...b, upvotes: data.upvotes, userVoted: data.user_voted } : b)
+      );
     } catch (err) {
-      console.error("Upvote failed:", err);
+      console.error("Upvote backend transaction failed, rolling back client state:", err);
+      // Fallback rollback to previous cached values to protect UI integrity
+      setBenchmarkDetails(prevDetails);
+      setBenchmarksList(prevList);
     }
   };
 
@@ -1563,13 +1603,17 @@ ${fallbackDeploy}
             {/* Bottom buttons panel inside drawer */}
             {benchmarkDetails && (
               <div className="flex gap-3 pt-4 border-t border-zinc-800 mt-4" id="drawer_bottom_buttons">
-                {/* Social upvotes button */}
+                {/* Social upvotes button styled dynamically to reflect active state (FEAT-006) */}
                 <button
                   id="btn_upvote_run"
                   onClick={() => triggerUpvote(benchmarkDetails.id)}
-                  className="flex-1 py-2 text-xs font-bold text-white bg-surface-1 border border-zinc-800 hover:border-amber-500/25 hover:bg-surface-0 rounded-lg transition flex items-center justify-center gap-2"
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 border ${
+                    benchmarkDetails.userVoted
+                      ? "text-surface-0 bg-accent-amber border-amber-500/20 shadow-md shadow-amber-glow hover:bg-accent-amber-hover"
+                      : "text-white bg-surface-1 border-zinc-800 hover:border-amber-500/25 hover:bg-surface-0"
+                  }`}
                 >
-                  <ThumbsUp className="w-4 h-4 text-accent-amber" />
+                  <ThumbsUp className={`w-4 h-4 transition ${benchmarkDetails.userVoted ? "text-surface-0 fill-current" : "text-accent-amber"}`} />
                   {t("dashboard.drawer.helpful_submission")} ({benchmarkDetails.upvotes})
                 </button>
 
@@ -1621,7 +1665,7 @@ ${fallbackDeploy}
       >
         <div className="flex flex-col items-center sm:items-start gap-1" id="footer_copyright_group">
           <span className="text-zinc-400 font-bold" id="span_copyright_text">© 2026 LLMDB.org. All rights reserved.</span>
-          <span className="text-zinc-500" id="span_footer_subtitle">Powered by next-generation deduplication and normalizers.</span>
+          <span className="text-zinc-500" id="span_footer_subtitle">Powered by Vercel and Neon</span>
         </div>
         <div className="flex flex-col items-center sm:items-end gap-1" id="footer_attributions_group">
           <span className="text-zinc-400" id="span_antigravity_badge">

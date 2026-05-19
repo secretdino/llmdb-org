@@ -7,7 +7,8 @@ import {
   doublePrecision, 
   integer, 
   varchar, 
-  pgEnum 
+  pgEnum,
+  unique
 } from 'drizzle-orm/pg-core';
 
 /**
@@ -398,3 +399,29 @@ export const comments = pgTable('comments', {
   // Record modification timestamp
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+/**
+ * Upvotes Table (FEAT-006)
+ * Represents the upvotes cast by registered community members on individual benchmark runs.
+ * A unique constraint on (benchmark_id, user_id) guarantees that a user can only vote once per run.
+ */
+export const upvotes = pgTable('upvotes', {
+  // Unique system-generated ID for each upvote
+  id: uuid('id').defaultRandom().primaryKey(),
+  
+  // Foreign key referencing the benchmark run that received the upvote
+  benchmarkId: uuid('benchmark_id')
+    .references(() => benchmarks.id, { onDelete: 'cascade' })
+    .notNull(),
+  
+  // Foreign key referencing the community member who cast the upvote
+  userId: uuid('user_id')
+    .references(() => users.id, { onDelete: 'cascade' })
+    .notNull(),
+  
+  // Record creation timestamp indicating when the upvote was cast
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  // Prevent duplicate voting by enforcing a unique pair of benchmark and user
+  uniqueVote: unique('upvotes_benchmark_user_unique').on(table.benchmarkId, table.userId)
+}));

@@ -8,7 +8,8 @@ import { benchmarks, canonicalBenchmarks, users, apiKeys } from './schema';
 import { POST as createKey, GET as listKeys } from '../app/api/v1/keys/route';
 import { DELETE as revokeKey } from '../app/api/v1/keys/[id]/route';
 import { POST as ingestBenchmark } from '../app/api/v1/benchmarks/route';
-import { PATCH as updateBenchmark, DELETE as deleteBenchmark } from '../app/api/v1/benchmarks/[id]/route';
+import { PATCH as updateBenchmark, DELETE as deleteBenchmark, GET as getBenchmark } from '../app/api/v1/benchmarks/[id]/route';
+import { POST as toggleUpvote } from '../app/api/v1/benchmarks/[id]/upvote/route';
 
 /**
  * ============================================================================
@@ -445,6 +446,127 @@ async function runTests() {
 
     console.log('   - Confirmed 401 Unauthorized for revoked API key.');
     console.log('✅ TEST 6 passed.\n');
+
+    // ------------------------------------------------------------------------
+    // TEST 7: Upvote Toggle & Double-Upvote Prevention Gates (FEAT-006)
+    // ------------------------------------------------------------------------
+    console.log('🧪 TEST 7: Upvote Toggle & Double-Upvote Prevention');
+
+    // Create a new benchmark run to test upvoting
+    const benchmarkForUpvoteReq = new Request('http://localhost/api/v1/benchmarks', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Mock-User-Email': 'tester@llmdb.org',
+        'X-Mock-User-Role': 'user',
+      },
+      body: JSON.stringify({
+        gpuModel: 'NVIDIA RTX 4090 Test-Card',
+        gpuCount: 1,
+        gpuVram: '24GB',
+        engine: 'vLLM',
+        modelName: 'Meta-Llama-3-8B-Instruct-Test-Upvote',
+        tokensPerSec: 90.0,
+        rawLogContent: highTrustLog,
+      }),
+    });
+
+    const benchmarkForUpvoteRes = await ingestBenchmark(benchmarkForUpvoteReq);
+    const benchmarkForUpvoteData = await benchmarkForUpvoteRes.json();
+    const upvoteRunId = benchmarkForUpvoteData.id;
+
+    if (!upvoteRunId) {
+      throw new Error('TEST 7 Failed: Could not create benchmark run for testing upvotes.');
+    }
+    console.log(`   - Created benchmark run ID: ${upvoteRunId} with 0 initial upvotes.`);
+
+    // A. Verify unauthenticated upvote toggles fail with 401
+    const anonUpvoteReq = new Request(`http://localhost/api/v1/benchmarks/${upvoteRunId}/upvote`, {
+      method: 'POST',
+    });
+    const anonUpvoteRes = await toggleUpvote(anonUpvoteReq, { params: { id: upvoteRunId } });
+    if (anonUpvoteRes.status !== 401) {
+      throw new Error(`TEST 7 Failed: Anonymous upvote did not return 401. Status: ${anonUpvoteRes.status}`);
+    }
+    console.log('   - Confirmed 401 Unauthorized for unauthenticated upvoting.');
+
+    // B. Toggle upvote on (First Vote)
+    const firstVoteReq = new Request(`http://localhost/api/v1/benchmarks/${upvoteRunId}/upvote`, {
+      method: 'POST',
+      headers: {
+        'X-Mock-User-Email': 'tester@llmdb.org',
+        'X-Mock-User-Role': 'user',
+      },
+    });
+    const firstVoteRes = await toggleUpvote(firstVoteReq, { params: { id: upvoteRunId } });
+    const firstVoteData = await firstVoteRes.json();
+
+    if (firstVoteRes.status !== 200 || firstVoteData.upvotes !== 1 || firstVoteData.user_voted !== true) {
+      throw new Error(`TEST 7 Failed: First upvote did not succeed or returned wrong metrics. Status: ${firstVoteRes.status}, Data: ${JSON.stringify(firstVoteData)}`);
+    }
+    console.log(`   - First upvote successful (Count: ${firstVoteData.upvotes}, Voted: ${firstVoteData.user_voted})`);
+
+    // C. Verify upvote status is returned in GET benchmark details (Authenticated)
+    const getAuthDetailsReq = new Request(`http://localhost/api/v1/benchmarks/${upvoteRunId}`, {
+      method: 'GET',
+      headers: {
+        'X-Mock-User-Email': 'tester@llmdb.org',
+        'X-Mock-User-Role': 'user',
+      },
+    });
+    const getAuthDetailsRes = await getBenchmark(getAuthDetailsReq, { params: { id: upvoteRunId } });
+    const getAuthDetailsData = await getAuthDetailsRes.json();
+
+    if (getAuthDetailsData.benchmark.upvotes !== 1 || getAuthDetailsData.benchmark.userVoted !== true) {
+      throw new Error(`TEST 7 Failed: Authenticated GET did not return correct upvote details. Data: ${JSON.stringify(getAuthDetailsData)}`);
+    }
+    console.log(`   - Authenticated details retrieved correctly (Count: ${getAuthDetailsData.benchmark.upvotes}, userVoted: ${getAuthDetailsData.benchmark.userVoted})`);
+
+    // D. Verify upvote status is returned false in GET benchmark details for anonymous users
+    const getAnonDetailsReq = new Request(`http://localhost/api/v1/benchmarks/${upvoteRunId}`, {
+      method: 'GET',
+    });
+    const getAnonDetailsRes = await getBenchmark(getAnonDetailsReq, { params: { id: upvoteRunId } });
+    const getAnonDetailsData = await getAnonDetailsRes.json();
+
+    if (getAnonDetailsData.benchmark.upvotes !== 1 || getAnonDetailsData.benchmark.userVoted !== false) {
+      throw new Error(`TEST 7 Failed: Anonymous GET did not return false userVoted. Data: ${JSON.stringify(getAnonDetailsData)}`);
+    }
+    console.log(`   - Anonymous details retrieved correctly (Count: ${getAnonDetailsData.benchmark.upvotes}, userVoted: ${getAnonDetailsData.benchmark.userVoted})`);
+
+    // E. Toggle upvote off (Second Vote acts as toggle off to prevent duplicate voting)
+    const secondVoteReq = new Request(`http://localhost/api/v1/benchmarks/${upvoteRunId}/upvote`, {
+      method: 'POST',
+      headers: {
+        'X-Mock-User-Email': 'tester@llmdb.org',
+        'X-Mock-User-Role': 'user',
+      },
+    });
+    const secondVoteRes = await toggleUpvote(secondVoteReq, { params: { id: upvoteRunId } });
+    const secondVoteData = await secondVoteRes.json();
+
+    if (secondVoteRes.status !== 200 || secondVoteData.upvotes !== 0 || secondVoteData.user_voted !== false) {
+      throw new Error(`TEST 7 Failed: Toggle off upvote did not succeed. Status: ${secondVoteRes.status}, Data: ${JSON.stringify(secondVoteData)}`);
+    }
+    console.log(`   - Second upvote click toggled off upvote correctly (Count: ${secondVoteData.upvotes}, Voted: ${secondVoteData.user_voted})`);
+
+    // F. Verify details show 0 upvotes and userVoted = false
+    const getAuthDetailsReq2 = new Request(`http://localhost/api/v1/benchmarks/${upvoteRunId}`, {
+      method: 'GET',
+      headers: {
+        'X-Mock-User-Email': 'tester@llmdb.org',
+        'X-Mock-User-Role': 'user',
+      },
+    });
+    const getAuthDetailsRes2 = await getBenchmark(getAuthDetailsReq2, { params: { id: upvoteRunId } });
+    const getAuthDetailsData2 = await getAuthDetailsRes2.json();
+
+    if (getAuthDetailsData2.benchmark.upvotes !== 0 || getAuthDetailsData2.benchmark.userVoted !== false) {
+      throw new Error(`TEST 7 Failed: Details not updated correctly after upvote toggle off. Data: ${JSON.stringify(getAuthDetailsData2)}`);
+    }
+    console.log(`   - Details after toggle off verified correctly (Count: ${getAuthDetailsData2.benchmark.upvotes}, userVoted: ${getAuthDetailsData2.benchmark.userVoted})`);
+
+    console.log('✅ TEST 7 passed.\n');
 
     // ------------------------------------------------------------------------
     // TEARDOWN: Clean up mock records to leave database in a clean state
