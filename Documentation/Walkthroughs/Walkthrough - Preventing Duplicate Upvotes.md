@@ -9,7 +9,11 @@ We have successfully resolved the duplicate upvoting bug on benchmark entries by
 - Placed a strict unique constraint `upvotes_benchmark_user_unique` on `(benchmark_id, user_id)` to database-enforce single votes per user.
 - Generated a migration SQL file using Drizzle Kit (`src/db/migrations/0003_closed_madripoor.sql`).
 
-### 2. API Endpoints
+### 2. Production Database Driver Migration (`src/db/index.ts`)
+- Migrated the production `driverMode === 'neon'` database setup from the stateless `drizzle-orm/neon-http` driver to the stateful, WebSocket-based `drizzle-orm/neon-serverless` Pool driver.
+- This ensures full database transaction support (e.g., `db.transaction(...)`) for complex state operations like benchmark ingestion, deduplication merging, and upvote toggles in production serverless environments.
+
+### 3. API Endpoints
 - **POST Toggle Endpoint (`src/app/api/v1/benchmarks/[id]/upvote/route.ts`)**:
   - Implemented session authentication using `authenticateRequest`.
   - Used an atomic database transaction (`db.transaction`) and cache-resilient direct `.select()` queries (avoiding Next.js fast-refresh schema caching issues) to toggle the user's vote status.
