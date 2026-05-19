@@ -1459,8 +1459,8 @@ ${fallbackDeploy}
                   </pre>
                 </div>
 
-                {/* 6. Stderr Timing Logs Console screen */}
-                {benchmarkDetails.rawLogContent && (
+                {/* 6. Stderr Timing Logs Console screen - Disabled/hidden per user request to simplify details drawer UI */}
+                {false && (
                   <div className="glass-card rounded-lg p-3 border border-zinc-800 flex flex-col gap-2 relative" id="drawer_console_logs_card">
                     <div className="flex justify-between items-center pb-2 border-b border-zinc-800" id="drawer_console_logs_header_row">
                       <h4 className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider flex items-center gap-1.5 font-heading">
@@ -1469,7 +1469,7 @@ ${fallbackDeploy}
                       </h4>
                       <button
                         id="btn_copy_raw_logs"
-                        onClick={() => copyLogsToClipboard(benchmarkDetails.rawLogContent || "")}
+                        onClick={() => copyLogsToClipboard(benchmarkDetails?.rawLogContent || "")}
                         className="px-2.5 py-1 text-[9px] font-bold text-accent-amber hover:text-white bg-amber-950/15 border border-amber-500/20 hover:border-amber-500/40 rounded-lg flex items-center gap-1 transition"
                       >
                         {copiedLogs ? <Check className="w-3 h-3 text-accent-teal animate-pulse" /> : <Copy className="w-3 h-3" />}
@@ -1477,7 +1477,7 @@ ${fallbackDeploy}
                       </button>
                     </div>
                     <pre className="w-full h-36 glass-input p-3 rounded-lg text-[9px] font-mono overflow-auto cyber-scrollbar whitespace-pre text-zinc-400">
-                      {benchmarkDetails.rawLogContent}
+                      {benchmarkDetails?.rawLogContent}
                     </pre>
                   </div>
                 )}
