@@ -135,12 +135,16 @@ export async function GET(
     // Check if the current authenticated user has already upvoted this benchmark (FEAT-006)
     let userVoted = false;
     if (context?.userId) {
-      const existingVote = await db.query.upvotes.findFirst({
-        where: and(
-          eq(upvotes.benchmarkId, runId),
-          eq(upvotes.userId, context.userId)
-        ),
-      });
+      const [existingVote] = await db
+        .select()
+        .from(upvotes)
+        .where(
+          and(
+            eq(upvotes.benchmarkId, runId),
+            eq(upvotes.userId, context.userId)
+          )
+        )
+        .limit(1);
       userVoted = !!existingVote;
     }
 

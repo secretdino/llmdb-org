@@ -41,21 +41,27 @@ export async function POST(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await db.transaction(async (tx: any) => {
       // 1. Verify the target benchmark exists
-      const run = await tx.query.benchmarks.findFirst({
-        where: eq(benchmarks.id, benchmarkId),
-      });
+      const [run] = await tx
+        .select()
+        .from(benchmarks)
+        .where(eq(benchmarks.id, benchmarkId))
+        .limit(1);
 
       if (!run) {
         throw new Error('NOT_FOUND');
       }
 
       // 2. Check if this user has already upvoted this benchmark
-      const existingVote = await tx.query.upvotes.findFirst({
-        where: and(
-          eq(upvotes.benchmarkId, benchmarkId),
-          eq(upvotes.userId, context.userId)
-        ),
-      });
+      const [existingVote] = await tx
+        .select()
+        .from(upvotes)
+        .where(
+          and(
+            eq(upvotes.benchmarkId, benchmarkId),
+            eq(upvotes.userId, context.userId)
+          )
+        )
+        .limit(1);
 
       let updatedCount = run.upvotes;
 

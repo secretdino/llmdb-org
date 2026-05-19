@@ -12,11 +12,11 @@ We have successfully resolved the duplicate upvoting bug on benchmark entries by
 ### 2. API Endpoints
 - **POST Toggle Endpoint (`src/app/api/v1/benchmarks/[id]/upvote/route.ts`)**:
   - Implemented session authentication using `authenticateRequest`.
-  - Used an atomic database transaction (`db.transaction`) to toggle the user's vote status.
+  - Used an atomic database transaction (`db.transaction`) and cache-resilient direct `.select()` queries (avoiding Next.js fast-refresh schema caching issues) to toggle the user's vote status.
   - Safely deletes the upvote record and decrements the `upvotes` counter in the `benchmarks` table if a vote exists; otherwise, creates a vote record and increments the counter.
 - **GET Details Endpoint (`src/app/api/v1/benchmarks/[id]/route.ts`)**:
   - Checks if the user is authenticated.
-  - Queries `upvotes` to resolve if the active user has already upvoted this benchmark run, returning `userVoted: true/false` inside the JSON response.
+  - Queries the `upvotes` table via direct `.select()` to resolve if the active user has already upvoted this benchmark run, returning `userVoted: true/false` inside the JSON response.
 
 ### 3. Snappy UI Optimistic States (`src/app/page.tsx`)
 - Refactored `triggerUpvote` to support snappy client-side optimistic UI state transitions. It toggles the state immediately and falls back gracefully to previous cached states if the backend request fails.
