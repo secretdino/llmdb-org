@@ -138,7 +138,14 @@
       "helpful_submission": "Helpful Submission",
       "model_weights": "Model weights",
       "share_entry": "Share Entry",
-      "copied_link": "Link Copied!"
+      "copied_link": "Link Copied!",
+      "comments_header": "Community Comments",
+      "comment_placeholder": "Share your thoughts or configuration tricks for this run...",
+      "post_comment": "Post Comment",
+      "no_comments": "No comments yet. Be the first to share your thoughts!",
+      "sign_in_to_comment": "Sign in to comment",
+      "commenting": "Posting comment...",
+      "comment_empty": "Comment cannot be empty."
     }
   },
   "login": {

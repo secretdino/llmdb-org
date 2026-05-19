@@ -138,7 +138,14 @@
       "helpful_submission": "Hilfreicher Beitrag",
       "model_weights": "Modellgewichte",
       "share_entry": "Eintrag teilen",
-      "copied_link": "Link kopiert!"
+      "copied_link": "Link kopiert!",
+      "comments_header": "Community-Kommentare",
+      "comment_placeholder": "Teilen Sie Ihre Gedanken oder Konfigurations-Tricks für diesen Lauf...",
+      "post_comment": "Kommentar Veröffentlichen",
+      "no_comments": "Noch keine Kommentare. Teilen Sie als Erster Ihre Gedanken!",
+      "sign_in_to_comment": "Melden Sie sich an, um zu kommentieren",
+      "commenting": "Kommentar wird veröffentlicht...",
+      "comment_empty": "Kommentar darf nicht leer sein."
     }
   },
   "login": {

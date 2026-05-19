@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { eq, and } from 'drizzle-orm';
 import { db } from '../../../../../db';
-import { benchmarks, canonicalBenchmarks, users, gpuCanonicalNames, modelCanonicalNames } from '../../../../../db/schema';
+import { benchmarks, canonicalBenchmarks, users, gpuCanonicalNames, modelCanonicalNames, comments } from '../../../../../db/schema';
 import { authenticateRequest, getOrCreateMockUser } from '../../../../../utils/auth';
 import { renderMarkdownToHtml } from '../../../../../utils/markdown';
 
@@ -117,11 +117,27 @@ export async function GET(
     // Translate markdown notes block into clean static HTML structure on server side
     const renderedNarrative = renderMarkdownToHtml(run.narrative);
 
+    // Query all comments for the benchmark run, joining author details
+    const benchmarkComments = await db
+      .select({
+        id: comments.id,
+        content: comments.content,
+        createdAt: comments.createdAt,
+        authorId: comments.authorId,
+        authorName: users.displayName,
+        authorAvatar: users.avatarUrl,
+      })
+      .from(comments)
+      .leftJoin(users, eq(comments.authorId, users.id))
+      .where(eq(comments.benchmarkId, runId))
+      .orderBy(comments.createdAt); // Chronological ascending comments flow
+
     return NextResponse.json(
       {
         benchmark: {
           ...run,
           renderedNarrative,
+          comments: benchmarkComments,
         },
       },
       { status: 200 }

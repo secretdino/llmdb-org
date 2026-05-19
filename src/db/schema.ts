@@ -370,3 +370,31 @@ export const benchmarks = pgTable('benchmarks', {
   // Record modification timestamp
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+/**
+ * Comments Table (FEAT-018)
+ * Represents the community discussion comments posted by registered members on individual benchmark runs.
+ */
+export const comments = pgTable('comments', {
+  // Unique system-generated ID for each comment
+  id: uuid('id').defaultRandom().primaryKey(),
+  
+  // Foreign key referencing the benchmark run this comment is attached to
+  benchmarkId: uuid('benchmark_id')
+    .references(() => benchmarks.id, { onDelete: 'cascade' })
+    .notNull(),
+  
+  // Foreign key referencing the user who wrote this comment
+  authorId: uuid('author_id')
+    .references(() => users.id, { onDelete: 'cascade' })
+    .notNull(),
+  
+  // Markdown or plain-text body content of the comment
+  content: text('content').notNull(),
+  
+  // Record creation timestamp
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  
+  // Record modification timestamp
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});

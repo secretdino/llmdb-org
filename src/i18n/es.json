@@ -138,7 +138,14 @@
       "helpful_submission": "Envío Útil",
       "model_weights": "Pesos del modelo",
       "share_entry": "Compartir entrada",
-      "copied_link": "¡Enlace copiado!"
+      "copied_link": "¡Enlace copiado!",
+      "comments_header": "Comentarios de la Comunidad",
+      "comment_placeholder": "Comparte tus opiniones o trucos de configuración para esta ejecución...",
+      "post_comment": "Publicar Comentario",
+      "no_comments": "Aún no hay comentarios. ¡Sé el primero en compartir tus ideas!",
+      "sign_in_to_comment": "Inicia sesión para comentar",
+      "commenting": "Publicando comentario...",
+      "comment_empty": "El comentario no puede estar vacío."
     }
   },
   "login": {

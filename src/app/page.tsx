@@ -99,9 +99,19 @@ interface BenchmarkItem {
   canonicalModelName: string | null;
 }
 
+interface CommentItem {
+  id: string;
+  content: string;
+  createdAt: string;
+  authorId: string;
+  authorName: string | null;
+  authorAvatar: string | null;
+}
+
 interface BenchmarkDetails extends BenchmarkItem {
   renderedNarrative: string;
   rawLogContent: string | null;
+  comments?: CommentItem[];
 }
 
 // Wrapping in React Suspense boundary is required in Next.js to prevent Client de-optimization
@@ -159,6 +169,11 @@ function DashboardContent() {
   const [copiedDocker, setCopiedDocker] = useState(false);
   const [copiedLogs, setCopiedLogs] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
+
+  // State variables for comments interaction (FEAT-018)
+  const [newCommentText, setNewCommentText] = useState("");
+  const [isPostingComment, setIsPostingComment] = useState(false);
+  const [commentError, setCommentError] = useState("");
   const [dockerEngine, setDockerEngine] = useState<"llama.cpp" | "vllm" | "ollama">("llama.cpp");
 
   // Clipboard copy helper to generate a direct link using the active run parameter
@@ -340,6 +355,42 @@ function DashboardContent() {
       setBenchmarksList(benchmarksList.map(b => b.id === runId ? { ...b, upvotes: b.upvotes + 1 } : b));
     } catch (err) {
       console.error("Upvote failed:", err);
+    }
+  };
+
+  // Trigger comment POST API call (FEAT-018)
+  const handlePostComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCommentText.trim() || !activeBenchmarkId) return;
+    setIsPostingComment(true);
+    setCommentError("");
+    try {
+      const response = await fetch(`/api/v1/benchmarks/${activeBenchmarkId}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content: newCommentText.trim() }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Hydrate details page client-side comment feed state instantly for fluid UX
+        if (benchmarkDetails) {
+          setBenchmarkDetails({
+            ...benchmarkDetails,
+            comments: [...(benchmarkDetails.comments || []), data.comment]
+          });
+        }
+        setNewCommentText("");
+      } else {
+        const errData = await response.json();
+        setCommentError(errData.error || t("dashboard.drawer.comment_empty"));
+      }
+    } catch (err) {
+      console.error("Failed to post comment:", err);
+      setCommentError(t("dashboard.drawer.comment_empty"));
+    } finally {
+      setIsPostingComment(false);
     }
   };
 
@@ -1393,6 +1444,119 @@ ${fallbackDeploy}
                     </pre>
                   </div>
                 )}
+
+                {/* 7. Comments Feed & Form Section (FEAT-018) */}
+                <div className="glass-card rounded-lg p-3.5 border border-zinc-800 flex flex-col gap-3 relative" id="drawer_comments_card">
+                  <h4 className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider flex items-center gap-1.5 font-heading pb-2 border-b border-zinc-800/80">
+                    <span className="text-accent-amber font-heading">💬</span>
+                    {t("dashboard.drawer.comments_header")}
+                  </h4>
+
+                  {/* List of comments */}
+                  <div className="flex flex-col gap-3 max-h-60 overflow-y-auto cyber-scrollbar pr-1" id="comments_feed_container">
+                    {!benchmarkDetails.comments || benchmarkDetails.comments.length === 0 ? (
+                      <p className="text-[11px] text-zinc-500 italic py-2 text-center" id="text_no_comments_yet">
+                        {t("dashboard.drawer.no_comments")}
+                      </p>
+                    ) : (
+                      benchmarkDetails.comments.map((cmt: CommentItem) => (
+                        <div
+                          key={cmt.id}
+                          className="flex items-start gap-2.5 p-2 rounded-lg bg-surface-1/45 border border-zinc-800/40 text-xs"
+                          id={`comment_item_${cmt.id}`}
+                        >
+                          {/* Avatar */}
+                          {cmt.authorAvatar ? (
+                            <img
+                              src={cmt.authorAvatar}
+                              alt={cmt.authorName || "User Avatar"}
+                              className="w-7 h-7 rounded-md object-cover border border-zinc-700/40 mt-0.5"
+                              id={`comment_avatar_${cmt.id}`}
+                            />
+                          ) : (
+                            <div
+                              className="w-7 h-7 rounded-md bg-accent-amber/10 border border-amber-500/20 text-accent-amber flex items-center justify-center text-[10px] font-black uppercase mt-0.5"
+                              id={`comment_avatar_fallback_${cmt.id}`}
+                            >
+                              {(cmt.authorName || "U")[0]}
+                            </div>
+                          )}
+
+                          {/* Comment content column */}
+                          <div className="flex-1 min-w-0" id={`comment_content_col_${cmt.id}`}>
+                            <div className="flex justify-between items-baseline mb-1" id={`comment_header_row_${cmt.id}`}>
+                              <span className="font-sans font-bold text-[11px] text-zinc-200 truncate" id={`comment_author_${cmt.id}`}>
+                                {cmt.authorName || "anonymous"}
+                              </span>
+                              <span className="text-[8px] font-mono text-zinc-500" id={`comment_time_${cmt.id}`}>
+                                {new Date(cmt.createdAt).toLocaleString()}
+                              </span>
+                            </div>
+                            <p className="text-zinc-400 text-[11px] font-sans leading-relaxed whitespace-pre-wrap break-words" id={`comment_body_${cmt.id}`}>
+                              {cmt.content}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Comment Input box / Form */}
+                  <div className="border-t border-zinc-800/60 pt-3" id="comment_form_wrapper">
+                    {status === "loading" ? (
+                      <div className="flex justify-center py-2">
+                        <span className="w-4 h-4 border-2 border-zinc-700 border-t-accent-amber rounded-full animate-spin" />
+                      </div>
+                    ) : status === "authenticated" ? (
+                      <form onSubmit={handlePostComment} className="flex flex-col gap-2" id="form_submit_comment">
+                        <textarea
+                          id="textarea_comment_input"
+                          rows={2}
+                          value={newCommentText}
+                          onChange={(e) => {
+                            setNewCommentText(e.target.value);
+                            if (commentError) setCommentError("");
+                          }}
+                          placeholder={t("dashboard.drawer.comment_placeholder")}
+                          className="w-full glass-input rounded-md px-3 py-2 text-[11px] placeholder-zinc-600 focus:outline-none focus:border-amber-500/50 resize-none font-sans"
+                        />
+                        {commentError && (
+                          <span className="text-[10px] font-semibold text-red-400" id="span_comment_error">
+                            {commentError}
+                          </span>
+                        )}
+                        <button
+                          id="btn_post_comment"
+                          type="submit"
+                          disabled={isPostingComment || !newCommentText.trim()}
+                          className="self-end px-3 py-1.5 text-[10px] font-heading font-black text-surface-0 bg-accent-amber hover:bg-accent-amber-hover disabled:bg-zinc-800 disabled:text-zinc-650 border border-amber-500/20 rounded-md transition duration-150 flex items-center gap-1 shadow-md shadow-amber-glow/5"
+                        >
+                          {isPostingComment ? (
+                            <>
+                              <span className="w-3 h-3 border-2 border-surface-0 border-t-transparent rounded-full animate-spin" />
+                              {t("dashboard.drawer.commenting")}
+                            </>
+                          ) : (
+                            t("dashboard.drawer.post_comment")
+                          )}
+                        </button>
+                      </form>
+                    ) : (
+                      <div className="p-3.5 rounded-lg bg-surface-1/30 border border-zinc-800/40 text-center" id="comment_signin_overlay">
+                        <p className="text-[11px] text-zinc-500 mb-2">
+                          Join the technical benchmarking community conversation.
+                        </p>
+                        <button
+                          id="btn_signin_to_comment"
+                          onClick={() => router.push(`/login?callbackUrl=${encodeURIComponent(pathname)}`)}
+                          className="px-3.5 py-1.5 text-[10px] font-heading font-black text-surface-0 bg-accent-amber hover:bg-accent-amber-hover border border-amber-500/20 rounded-md transition shadow-md shadow-amber-glow/5"
+                        >
+                          {t("dashboard.drawer.sign_in_to_comment")}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             ) : null}
 

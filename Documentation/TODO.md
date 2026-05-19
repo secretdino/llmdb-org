@@ -36,6 +36,7 @@ This document tracks the execution progress of features across the project's dev
 - [x] **Internationalization System**: Build React Context provider, write EN, ES, DE translation assets, wrap global layout, and design custom header language selectors.
 
 ## 🪵 Phase 2: Engagement, Automated Crawling & Advanced Moderation
+- [x] **[FEAT-018] Comments**: Enable comments for logged-in users on benchmark entries.
 - [ ] **[[FEAT-007] Crawler Agent](file:///c:/git/pi/llmdb/docs/features_and_epics/FEAT-007_crawler_agent.md)**: Automated parser to crawl HuggingFace blogs, Github, or Reddit threads.
 - [ ] **[FEAT-006] Upvotes**: Community signals & sorting by upvote count.
 - [ ] **[FEAT-008] Hardware Directory Pages**: Landing pages for specific GPUs.
