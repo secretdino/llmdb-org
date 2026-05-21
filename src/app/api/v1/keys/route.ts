@@ -34,6 +34,14 @@ export async function POST(req: Request): Promise<Response> {
       }
     }
 
+    // Enforce role authorization: Only moderators and admins can manage API keys
+    if (context.role !== 'admin' && context.role !== 'moderator') {
+      return NextResponse.json(
+        { error: 'Forbidden. Only administrators and moderators can manage API keys.' },
+        { status: 403 }
+      );
+    }
+
     // Parse request body parameters
     let body: { name?: string } = {};
     try {
@@ -97,6 +105,14 @@ export async function GET(req: Request): Promise<Response> {
           { status: 401 }
         );
       }
+    }
+
+    // Enforce role authorization: Only moderators and admins can manage API keys
+    if (context.role !== 'admin' && context.role !== 'moderator') {
+      return NextResponse.json(
+        { error: 'Forbidden. Only administrators and moderators can manage API keys.' },
+        { status: 403 }
+      );
     }
 
     // Fetch user keys, selecting metadata columns only (never returning hashes)

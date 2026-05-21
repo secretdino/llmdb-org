@@ -81,6 +81,12 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     // Check user sign in and provision accounts
     async signIn({ user, account, profile }) {
+      // Parse admin emails from environment variable
+      const adminEmails = (process.env.ADMIN_EMAILS || '')
+        .split(',')
+        .map(email => email.trim().toLowerCase())
+        .filter(Boolean);
+
       if (account?.provider === 'github') {
         const email = user.email;
         if (!email) return false;
@@ -90,44 +96,72 @@ export const authOptions: NextAuthOptions = {
         // Query if user already exists
         const existingUsers = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
+        const emailLower = email.toLowerCase();
+        const shouldBeAdmin = adminEmails.includes(emailLower);
+
         if (existingUsers.length > 0) {
           const dbUser = existingUsers[0];
-          // Update githubId or avatar if missing
-          if (!dbUser.githubId || !dbUser.avatarUrl) {
-            await db.update(users)
-              .set({
-                githubId: githubId || dbUser.githubId,
-                avatarUrl: user.image || dbUser.avatarUrl,
-                displayName: dbUser.displayName || user.name || dbUser.displayName
-              })
-              .where(eq(users.id, dbUser.id));
+          let role = dbUser.role;
+
+          // Auto-promote if in ADMIN_EMAILS and not currently an admin
+          if (shouldBeAdmin && dbUser.role !== 'admin') {
+            role = 'admin';
+            await db.update(users).set({ role }).where(eq(users.id, dbUser.id));
           }
-          (user as ExtendedNextAuthUser).role = dbUser.role;
+
+          // Update githubId or avatar if missing or if role was updated
+          if (!dbUser.githubId || !dbUser.avatarUrl || dbUser.role !== role) {
+            await db.update(users)
+               .set({
+                 githubId: githubId || dbUser.githubId,
+                 avatarUrl: user.image || dbUser.avatarUrl,
+                 displayName: dbUser.displayName || user.name || dbUser.displayName,
+                 role
+               })
+               .where(eq(users.id, dbUser.id));
+          }
+          (user as ExtendedNextAuthUser).role = role;
           (user as ExtendedNextAuthUser).id = dbUser.id;
           (user as ExtendedNextAuthUser).displayName = dbUser.displayName || user.name;
         } else {
           // Auto-create new user
+          const initialRole = shouldBeAdmin ? 'admin' : 'user';
           const inserted = await db.insert(users)
             .values({
               email,
               githubId,
               displayName: user.name || email.split('@')[0],
               avatarUrl: user.image || null,
-              role: 'user'
+              role: initialRole
             })
             .returning();
           
-          (user as ExtendedNextAuthUser).role = 'user';
+          (user as ExtendedNextAuthUser).role = initialRole;
           (user as ExtendedNextAuthUser).id = inserted[0].id;
           (user as ExtendedNextAuthUser).displayName = inserted[0].displayName;
         }
       } else if (account?.provider === 'credentials') {
+        const email = user.email;
+        if (!email) return false;
+
+        const emailLower = email.toLowerCase();
+        const shouldBeAdmin = adminEmails.includes(emailLower);
+
         // Hydrate direct user properties from authorize
-        const dbUser = await db.select().from(users).where(eq(users.email, user.email || '')).limit(1);
-        if (dbUser.length > 0) {
-          (user as ExtendedNextAuthUser).id = dbUser[0].id;
-          (user as ExtendedNextAuthUser).role = dbUser[0].role;
-          (user as ExtendedNextAuthUser).displayName = dbUser[0].displayName;
+        const dbUserList = await db.select().from(users).where(eq(users.email, email)).limit(1);
+        if (dbUserList.length > 0) {
+          const dbUser = dbUserList[0];
+          let role = dbUser.role;
+
+          // Auto-promote credentials user if in ADMIN_EMAILS and not currently an admin
+          if (shouldBeAdmin && dbUser.role !== 'admin') {
+            role = 'admin';
+            await db.update(users).set({ role }).where(eq(users.id, dbUser.id));
+          }
+
+          (user as ExtendedNextAuthUser).id = dbUser.id;
+          (user as ExtendedNextAuthUser).role = role;
+          (user as ExtendedNextAuthUser).displayName = dbUser.displayName;
         }
       }
       return true;

@@ -49,3 +49,23 @@ This document tracks the execution progress of features across the project's dev
 - [ ] **[FEAT-013] Side-by-Side Comparison Tool**: Compare two configs side by side.
 - [ ] **[FEAT-014] Charts & Graphs**: Scatterplots of tok/s vs context length.
 - [ ] **[FEAT-015] Export data**: CSV/JSON data dumps for research.
+
+## 🛡️ Production, Administrative & Moderation Backlog
+
+### Production Ingestion & Access Gates
+- [x] **Restrict API Key Creation**: Update `/api/v1/keys` endpoints to only allow users with `moderator` or `admin` roles to generate keys.
+- [x] **Setup Admin ID in Prod**: Configure production OAuth / credentials database seeder or setup script to assign `admin` role to the site owner's personal account.
+- [x] **Generate Prod API Key**: Securely generate the production API key for crawler and ingestion agents once roles are restricted.
+- [ ] **API Rate Limiting & Abuse Prevention**: Implement request rate limits on `/api/v1/benchmarks` specifically targeting API key ingestion routes.
+- [ ] **API Key Revocation UI**: Dashboard panel for admins/moderators to view and instantly revoke active API keys.
+
+### Backlog: Administrative Actions
+- [ ] **Global Content Control**: Ability to edit or delete any benchmark entry or community comment across the platform.
+- [ ] **User Role Management**: Ability to promote standard users to `moderator` or `admin` status.
+- [ ] **User Block/Ban System**: Ability to block offending or abusive users from logging in or submitting comments.
+- [ ] **Admin Control Center UI**: A secure, glassmorphic admin panel containing KPI telemetry and moderation control queues.
+
+### Backlog: Moderator Actions
+- [ ] **Global Content Control**: Ability to edit or delete any benchmark entry or community comment.
+- [ ] **User Block/Ban System**: Ability to block/flag abusive accounts (restricted to suspension levels set by admins).
+- [ ] **Review Queue Access**: Direct dashboard portal to review quarantined or flagged runs, approving or permanently archiving them.

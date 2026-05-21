@@ -167,6 +167,11 @@ export async function authenticateRequest(req: Request): Promise<AuthContext | n
     return null;
   }
 
+  // Defensive fail-safe gate: Invalidate key if owner role is 'user' (only admins/moderators can use API keys)
+  if (owner.role === 'user') {
+    return null;
+  }
+
   // Proactively update lastUsedAt timestamp in background (non-blocking)
   db.update(apiKeys)
     .set({ lastUsedAt: new Date() })

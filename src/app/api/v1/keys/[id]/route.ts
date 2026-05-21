@@ -37,6 +37,14 @@ export async function DELETE(
       }
     }
 
+    // Enforce role authorization: Only moderators and admins can manage API keys
+    if (context.role !== 'admin' && context.role !== 'moderator') {
+      return NextResponse.json(
+        { error: 'Forbidden. Only administrators and moderators can manage API keys.' },
+        { status: 403 }
+      );
+    }
+
     // Find key in database
     const keyRecord = await db.query.apiKeys.findFirst({
       where: eq(apiKeys.id, keyId),
